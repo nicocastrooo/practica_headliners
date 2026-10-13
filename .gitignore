@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Datos y Modelos (Regla estricta del equipo - HU #34)
+data/

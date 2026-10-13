@@ -1,0 +1,17 @@
+[project]
+name = "practica-headliners"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Nico", email = "nicolas.castro@udc.es" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+practica-headliners = "practica_headliners:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
