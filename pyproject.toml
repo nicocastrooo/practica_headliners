@@ -7,7 +7,9 @@ authors = [
     { name = "Nico", email = "nicolas.castro@udc.es" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pandas>=3.0.6",
+]
 
 [project.scripts]
 practica-headliners = "practica_headliners:main"
