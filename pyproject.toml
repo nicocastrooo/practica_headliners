@@ -7,7 +7,9 @@ authors = [
     { name = "Nico", email = "nicolas.castro@udc.es" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pandas>=3.0.6",
+]
 
 [project.scripts]
 practica-headliners = "practica_headliners:main"
@@ -15,3 +17,8 @@ practica-headliners = "practica_headliners:main"
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
