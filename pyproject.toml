@@ -1,0 +1,13 @@
+[project]
+name = "practica-headliners"
+version = "0.1.0"
+description = "Práctica para Enxeñaría do Software"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pytest>=8.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
