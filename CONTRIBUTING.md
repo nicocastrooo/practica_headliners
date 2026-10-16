@@ -22,5 +22,5 @@ La rama dev solo se podrá fusionar en main si todas las pruebas pasan correctam
 
 Ningún cambio se integrará si las pruebas automatizadas de GitHub Actions devuelven error.
 
-4. Revisiones
+## 4. Revisiones
 Al terminar una tarea, se puede abrir un Pull Request para que los compañeros revisen el código antes de integrarlo en la rama de desarrollo común.
