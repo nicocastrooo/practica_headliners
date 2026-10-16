@@ -1,0 +1,33 @@
+name: Pruebas Automatizadas (pytest)
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    name: Ejecutar pytest con uv
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar uv y activar caché
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Configurar versión de Python del proyecto
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Instalar dependencias exactas del uv.lock
+        run: uv sync --frozen
+
+      - name: Ejecutar todas las pruebas con pytest
+        run: uv run pytest -v
