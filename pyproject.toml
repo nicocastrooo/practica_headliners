@@ -20,5 +20,12 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "autopep8>=2.3.2",
     "pytest>=9.1.1",
 ]
+
+[tool.autopep8]
+max_line_length = 79
+in-place = true
+recursive = true
+aggressive = 1
