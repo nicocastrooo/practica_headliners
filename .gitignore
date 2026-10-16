@@ -221,3 +221,6 @@ __marimo__/
 
 # Datos y Modelos (Regla estricta del equipo - HU #34)
 data/
+
+#Desktop files (Windows)
+desktop.ini
