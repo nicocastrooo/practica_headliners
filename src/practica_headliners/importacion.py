@@ -54,5 +54,120 @@ def leer_sqlite(ruta):
         ) from error
 
     if datos.empty:
-        raise ErrorImportacion(f"La tabla '{tablas[0]}' no contiene datos: {ruta}")
+        raise ErrorImportacion(
+            f"La tabla '{
+                tablas[0]}' no contiene datos: {ruta}")
     return datos
+
+
+EXTENSIONES_EXCEL = {
+    ".xlsx": "openpyxl",
+    ".xls": "xlrd",
+}
+EXTENSIONES_SQLITE = {".sqlite", ".db"}
+
+
+def leer_csv(ruta):
+    """Importa los datos de un archivo CSV.
+
+    Args:
+        ruta: ruta (str o Path) del archivo .csv.
+
+    Returns:
+        DataFrame con el contenido del archivo CSV.
+
+    Raises:
+        ErrorImportacion: si el archivo no existe, está dañado, su
+            contenido no corresponde a un CSV o no contiene datos.
+    """
+    ruta = Path(ruta)
+    if not ruta.is_file():
+        raise ErrorImportacion(f"El archivo no existe: {ruta}")
+
+    try:
+        if b"\x00" in ruta.read_bytes():
+            raise ErrorImportacion(
+                f"El archivo está dañado o no es un archivo CSV: {ruta}"
+            )
+        datos = pd.read_csv(ruta)
+    except ErrorImportacion:
+        raise
+    except pd.errors.EmptyDataError as error:
+        raise ErrorImportacion(
+            f"El archivo CSV no contiene datos: {ruta}"
+        ) from error
+    except (
+        pd.errors.ParserError,
+        UnicodeDecodeError,
+        OSError,
+        ValueError,
+    ) as error:
+        raise ErrorImportacion(
+            f"El archivo está dañado o no es un archivo CSV: {ruta}"
+        ) from error
+
+    if datos.empty:
+        raise ErrorImportacion(f"El archivo CSV no contiene datos: {ruta}")
+    return datos
+
+
+def leer_excel(ruta):
+    """Importa los datos de un archivo Excel (.xlsx o .xls).
+
+    Args:
+        ruta: ruta (str o Path) del archivo .xlsx o .xls.
+
+    Returns:
+        DataFrame con el contenido del archivo Excel.
+
+    Raises:
+        ErrorImportacion: si el archivo no existe, la extensión no es de
+            Excel, está dañado o no contiene datos.
+    """
+    ruta = Path(ruta)
+    if not ruta.is_file():
+        raise ErrorImportacion(f"El archivo no existe: {ruta}")
+
+    extension = ruta.suffix.lower()
+    motor = EXTENSIONES_EXCEL.get(extension)
+
+    try:
+        datos = pd.read_excel(ruta, engine=motor)
+    except Exception as error:
+        raise ErrorImportacion(
+            f"El archivo está dañado o no es un archivo Excel: {ruta}"
+        ) from error
+
+    if datos.empty:
+        raise ErrorImportacion(f"El archivo Excel no contiene datos: {ruta}")
+    return datos
+
+
+def importar_datos(ruta):
+    """Importa datos desde un archivo CSV, Excel o SQLite según su extensión.
+
+    Args:
+        ruta: ruta (str o Path) del archivo a importar.
+
+    Returns:
+        DataFrame con los datos importados.
+
+    Raises:
+        ErrorImportacion: si el archivo no existe, la extensión no está
+            soportada, el archivo está dañado o no contiene datos.
+    """
+    ruta = Path(ruta)
+    if not ruta.is_file():
+        raise ErrorImportacion(f"El archivo no existe: {ruta}")
+
+    extension = ruta.suffix.lower()
+    if extension == ".csv":
+        return leer_csv(ruta)
+    if extension in EXTENSIONES_EXCEL:
+        return leer_excel(ruta)
+    if extension in EXTENSIONES_SQLITE:
+        return leer_sqlite(ruta)
+
+    raise ErrorImportacion(
+        f"La extensión '{ruta.suffix}' no está soportada: {ruta}"
+    )
