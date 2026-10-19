@@ -1,7 +1,8 @@
 import sys
 from pathlib import Path
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-                               QHBoxLayout, QPushButton, QLabel, QFileDialog)
+                               QHBoxLayout, QPushButton, QLabel, QFileDialog,
+                               QMessageBox)
 
 from practica_headliners.importacion import importar_datos, ErrorImportacion
 from practica_headliners.gui.tabla_datos import TablaDatos
@@ -61,20 +62,22 @@ class VentanaPrincipal(QMainWindow):
         # Intentamos cargar los datos
         try:
             df = importar_datos(ruta_absoluta)
-            
-            df = importar_datos(ruta_absoluta)
             self.tabla.mostrar(df)
             self.datos = df
             pass
-            
-        except ErrorImportacion as e:
-            # AQUÍ DIEGO (Historia #101)
-            # tus QMessageBox para avisar de los errores
-            pass
-        except Exception as e:
-            # Por si peta algo raro que no esté contemplado en ErrorImportacion
-            pass
 
+        except ErrorImportacion as e:
+            QMessageBox.critical(
+                self,
+                "Error de importación",
+                str(e)
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error inesperado",
+                f"Ocurrió un error inesperado al leer el archivo:\n{str(e)}"
+            )
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
