@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QPushButton, QLabel, QFileDialog)
 
 from practica_headliners.importacion import importar_datos, ErrorImportacion
+from practica_headliners.gui.tabla_datos import TablaDatos
 
 class VentanaPrincipal(QMainWindow):
     def __init__(self):
@@ -30,8 +31,10 @@ class VentanaPrincipal(QMainWindow):
         
         self.layout_principal.addLayout(layout_superior)
 
-        # AQUÍ SAMU (Historia #100) 
-        # self.layout_principal.addWidget(tu_tabla)
+        self.datos = None
+        self.tabla = TablaDatos()
+        self.layout_principal.addWidget(self.tabla, stretch=1)
+        
 
 
     def abrir_explorador_archivos(self):
@@ -59,8 +62,9 @@ class VentanaPrincipal(QMainWindow):
         try:
             df = importar_datos(ruta_absoluta)
             
-            # AQUÍ SAMU (Historia #100)
-            # le pasas el 'df' a tu tabla para que muestre los datos
+            df = importar_datos(ruta_absoluta)
+            self.tabla.mostrar(df)
+            self.datos = df
             pass
             
         except ErrorImportacion as e:
