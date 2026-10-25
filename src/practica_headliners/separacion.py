@@ -28,8 +28,8 @@ def separar_datos(df: pd.DataFrame, porcentaje_test: float = 20.0, semilla: int 
     if not isinstance(semilla, int):
         raise ErrorSeparacion("La semilla debe ser un número entero.")
 
-    # Cálculo exacto de filas (redondeando hacia abajo para test)
-    num_test = int(len(df) * (porcentaje_test / 100.0))
+    # Cálculo exacto de filas solucionando el error de coma flotante detectado en tests
+    num_test = int(round(len(df) * (porcentaje_test / 100.0)))
     num_train = len(df) - num_test
 
     # 4. Validación de conjuntos vacíos
