@@ -8,8 +8,8 @@ from PySide6.QtCore import Qt
 from practica_headliners.importacion import importar_datos, ErrorImportacion
 from practica_headliners.gui.tabla_datos import TablaDatos
 
-# Importamos la validación del core (Tarea #103 de Samu)
-from practica_headliners.validacion import validar_seleccion_columnas, ErrorValidacion
+# Importamos la validación del core (Tarea #103)
+from practica_headliners.seleccion import validar_seleccion, ErrorSeleccion
 
 class VentanaPrincipal(QMainWindow):
     def __init__(self):
@@ -119,7 +119,6 @@ class VentanaPrincipal(QMainWindow):
             self.combo_target.addItem(col)
 
     def confirmar_seleccion(self):
-        """Recoge la selección, llama a la validación de Samu y gestiona la respuesta."""
         features = []
         for i in range(self.lista_features.count()):
             item = self.lista_features.item(i)
@@ -131,7 +130,8 @@ class VentanaPrincipal(QMainWindow):
             target = None
 
         try:
-            validar_seleccion_columnas(self.datos, features, target)
+            # Llamamos a la función real de Samu
+            validar_seleccion(self.datos, features, target)
             
             self.features_seleccionadas = features
             self.target_seleccionado = target
@@ -142,7 +142,8 @@ class VentanaPrincipal(QMainWindow):
                 f"Entradas (Features): {', '.join(features)}\nSalida (Target): {target}"
             )
             
-        except ErrorValidacion as e:
+        except ErrorSeleccion as e:
+            # Capturamos la excepción real
             QMessageBox.warning(self, "Error de Validación", str(e))
 
 
