@@ -1,4 +1,5 @@
 import pandas as pd
+import math
 
 
 class ErrorPreprocesado(Exception):
@@ -45,11 +46,9 @@ def tratar_valores_inexistentes(
     Raises:
         ErrorPreprocesado: Si la constante no es numérica o un conjunto queda vacío.
     """
-    # Trabajamos sobre copias para no tocar los originales
     train_procesado = df_entrenamiento.copy()
     test_procesado = df_test.copy()
 
-    # Contamos cuántos NaN hay antes de rellenar para el resumen de la GUI
     nulos_train = int(train_procesado[columnas].isna().sum().sum())
     nulos_test = int(test_procesado[columnas].isna().sum().sum())
     resumen = {"entrenamiento": 0, "test": 0}
@@ -67,9 +66,18 @@ def tratar_valores_inexistentes(
         resumen["test"] = len(df_test) - len(test_procesado)
 
     elif estrategia == "media":
-        # REGLA CRÍTICA: Se calcula la media SOLO con entrenamiento
         valores_relleno = {
             col: train_procesado[col].mean() for col in columnas}
+
+        columnas_vacias = [
+            col for col,
+            val in valores_relleno.items() if pd.isna(val)]
+        if columnas_vacias:
+            raise ErrorPreprocesado(
+                f"No se puede calcular la media porque las siguientes columnas están completamente "
+                f"vacías en el conjunto de entrenamiento: {
+                    ', '.join(columnas_vacias)}."
+            )
 
         train_procesado = train_procesado.fillna(value=valores_relleno)
         test_procesado = test_procesado.fillna(value=valores_relleno)
@@ -78,9 +86,18 @@ def tratar_valores_inexistentes(
         resumen["test"] = nulos_test
 
     elif estrategia == "mediana":
-        # REGLA CRÍTICA: Se calcula la mediana SOLO con entrenamiento
         valores_relleno = {
             col: train_procesado[col].median() for col in columnas}
+
+        columnas_vacias = [
+            col for col,
+            val in valores_relleno.items() if pd.isna(val)]
+        if columnas_vacias:
+            raise ErrorPreprocesado(
+                f"No se puede calcular la mediana porque las siguientes columnas están completamente "
+                f"vacías en el conjunto de entrenamiento: {
+                    ', '.join(columnas_vacias)}."
+            )
 
         train_procesado = train_procesado.fillna(value=valores_relleno)
         test_procesado = test_procesado.fillna(value=valores_relleno)
@@ -89,13 +106,15 @@ def tratar_valores_inexistentes(
         resumen["test"] = nulos_test
 
     elif estrategia == "valor_constante":
-        # Validación estricta para asegurar que es numérico
         if valor_constante is None or isinstance(valor_constante, bool):
             raise ErrorPreprocesado(
                 "Debe proporcionar un valor constante numérico.")
 
         try:
             valor_constante = float(valor_constante)
+            if not math.isfinite(valor_constante):
+                raise ErrorPreprocesado(
+                    "El valor constante debe ser un número finito (no 'nan' ni 'inf').")
         except (ValueError, TypeError):
             raise ErrorPreprocesado(
                 "El valor constante introducido debe ser numérico.")
