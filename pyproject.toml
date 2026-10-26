@@ -1,0 +1,34 @@
+[project]
+name = "practica-headliners"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Nico", email = "nicolas.castro@udc.es" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "openpyxl>=3.1.5",
+    "pandas>=3.0.6",
+    "pyside6>=6.12.0",
+    "xlrd>=2.0.2",
+]
+
+[project.scripts]
+practica-headliners = "practica_headliners:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "autopep8>=2.3.2",
+    "pytest>=9.1.1",
+]
+
+[tool.autopep8]
+max_line_length = 79
+in-place = true
+recursive = true
+aggressive = 1
