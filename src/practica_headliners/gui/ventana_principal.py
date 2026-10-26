@@ -15,6 +15,9 @@ from practica_headliners.seleccion import validar_seleccion, ErrorSeleccion
 # Importamos la separación del core (Tarea #106)
 from practica_headliners.separacion import separar_datos, ErrorSeparacion
 
+# Importamos el panel de preprocesado visual
+from practica_headliners.gui.panel_preprocesado import PanelPreprocesado
+
 class VentanaPrincipal(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -45,7 +48,7 @@ class VentanaPrincipal(QMainWindow):
         self.features_seleccionadas = []
         self.target_seleccionado = None
         
-        # Nuevas variables de estado para la separación (Tarea #108)
+        # Variables de estado para la separación
         self.df_entrenamiento = None
         self.df_test = None
 
@@ -81,7 +84,7 @@ class VentanaPrincipal(QMainWindow):
         self.btn_confirmar.clicked.connect(self.confirmar_seleccion)
         self.layout_principal.addWidget(self.btn_confirmar)
 
-        # --- ZONA DE SEPARACIÓN DE DATOS (Tu Tarea #108) ---
+        # --- ZONA DE SEPARACIÓN DE DATOS (Tarea #108) ---
         self.grupo_separacion = QGroupBox("Separación en Entrenamiento y Test")
         layout_separacion = QHBoxLayout()
 
@@ -117,6 +120,10 @@ class VentanaPrincipal(QMainWindow):
         self.btn_separar.clicked.connect(self.ejecutar_separacion)
         self.layout_principal.addWidget(self.btn_separar)
 
+        # --- ZONA DE PREPROCESADO (Panel Integrado) ---
+        self.panel_preprocesado = PanelPreprocesado()
+        self.panel_preprocesado.aplicado.connect(self.on_preprocesado_aplicado)
+        self.layout_principal.addWidget(self.panel_preprocesado)
 
     def actualizar_porcentaje_entrenamiento(self, texto):
         """Calcula visualmente el porcentaje complementario en tiempo real."""
@@ -133,7 +140,7 @@ class VentanaPrincipal(QMainWindow):
         """Descarta la separación y futuros modelos cuando cambia el dataset o las columnas."""
         self.df_entrenamiento = None
         self.df_test = None
-        # NOTA: En futuras historias, añadir aquí self.modelo = None o self.datos_preprocesados = None
+        self.panel_preprocesado.invalidar()
 
     def abrir_explorador_archivos(self):
         filtros = "Archivos compatibles (*.csv *.xlsx *.xls *.sqlite *.db)"
@@ -223,28 +230,28 @@ class VentanaPrincipal(QMainWindow):
         try:
             pct_test = float(texto_pct)
         except ValueError:
-            pct_test = texto_pct  # Se pasa como string para que el Core lo intercepte
+            pct_test = texto_pct  
 
         try:
             semilla = int(texto_sem)
         except ValueError:
-            # Si el usuario escribe '42.5' o letras, intentamos pasarlo tal cual al Core 
-            # para que la excepción isinstance(semilla, int) de tu compañero salte.
             try:
                 semilla = float(texto_sem)
             except ValueError:
                 semilla = texto_sem 
 
-        # 3. Ejecutar la función lógica de tu compañero
+        # 3. Ejecutar la función lógica de separación
         try:
-            # Si repiten la separación, limpiamos el modelo anterior (Flujo #108)
             self.limpiar_estado_flujo()
 
             train, test = separar_datos(self.datos, porcentaje_test=pct_test, semilla=semilla)
             
-            # Guardamos el estado para futuras historias (preprocesado y modelo)
             self.df_entrenamiento = train
             self.df_test = test
+
+            # Configuramos el panel de preprocesado con los nuevos conjuntos y columnas analizadas
+            columnas_analisis = self.features_seleccionadas + [self.target_seleccionado]
+            self.panel_preprocesado.establecer_conjuntos(train, test, columnas_analisis)
 
             # Visualización de confirmación
             QMessageBox.information(
@@ -259,6 +266,18 @@ class VentanaPrincipal(QMainWindow):
             QMessageBox.warning(self, "Error de Separación", str(e))
         except Exception as e:
             QMessageBox.critical(self, "Error Inesperado", str(e))
+
+    def on_preprocesado_aplicado(self, entrenamiento, test):
+        """Actualiza los datasets con los datos ya tratados procedentes del panel."""
+        self.df_entrenamiento = entrenamiento
+        self.df_test = test
+
+
+        def actualizar_estado_modelo(self):
+            pendientes = self.panel_preprocesado.hay_pendientes()
+            if hasattr(self, "btn_crear_modelo"):
+                self.btn_crear_modelo.setEnabled(not pendientes)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
