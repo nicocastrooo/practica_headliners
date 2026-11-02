@@ -1,22 +1,22 @@
 import sys
 from pathlib import Path
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QPushButton, QLabel, QFileDialog,
                                QMessageBox, QGroupBox, QListWidget, QListWidgetItem, 
-                               QComboBox, QLineEdit)
+                               QComboBox, QLineEdit, QTableWidget, QTableWidgetItem, 
+                               QHeaderView, QAbstractItemView)
 from PySide6.QtCore import Qt
 
 from practica_headliners.importacion import importar_datos, ErrorImportacion
 from practica_headliners.gui.tabla_datos import TablaDatos
-
-# Importamos la validación del core (Tarea #103)
 from practica_headliners.seleccion import validar_seleccion, ErrorSeleccion
-
-# Importamos la separación del core (Tarea #106)
 from practica_headliners.separacion import separar_datos, ErrorSeparacion
-
-# Importamos el panel de preprocesado visual
 from practica_headliners.gui.panel_preprocesado import PanelPreprocesado
+from practica_headliners.modelo import (
+    entrenar_modelo, evaluar_modelo, generar_formula, ErrorModelo
+)
 
 class VentanaPrincipal(QMainWindow):
     def __init__(self):
@@ -48,25 +48,26 @@ class VentanaPrincipal(QMainWindow):
         self.features_seleccionadas = []
         self.target_seleccionado = None
         
-        # Variables de estado para la separación
+        # Variables de estado para la separación y modelo
         self.df_entrenamiento = None
         self.df_test = None
+        self.modelo_actual = None
 
-        # Tabla de datos (Tarea #100)
+        # Tabla de datos
         self.tabla = TablaDatos()
         self.layout_principal.addWidget(self.tabla, stretch=1)
 
-        # --- ZONA DE SELECTORES (Tarea #105) ---
+        # --- ZONA DE SELECTORES ---
         self.grupo_selectores = QGroupBox("Selección de Variables")
         layout_selectores = QHBoxLayout()
 
-        # Selector de Features (Selección múltiple con casillas)
+        # Selector de Features
         layout_features = QVBoxLayout()
         layout_features.addWidget(QLabel("Variables de Entrada (Features):"))
         self.lista_features = QListWidget()
         layout_features.addWidget(self.lista_features)
 
-        # Selector de Target (Selección única con desplegable)
+        # Selector de Target
         layout_target = QVBoxLayout()
         layout_target.addWidget(QLabel("Variable de Salida (Target):"))
         self.combo_target = QComboBox()
@@ -80,28 +81,25 @@ class VentanaPrincipal(QMainWindow):
 
         # Botón de confirmación de columnas
         self.btn_confirmar = QPushButton("Confirmar selección")
-        self.btn_confirmar.setEnabled(False) # Se habilita solo al cargar datos
+        self.btn_confirmar.setEnabled(False)
         self.btn_confirmar.clicked.connect(self.confirmar_seleccion)
         self.layout_principal.addWidget(self.btn_confirmar)
 
-        # --- ZONA DE SEPARACIÓN DE DATOS (Tarea #108) ---
+        # --- ZONA DE SEPARACIÓN DE DATOS ---
         self.grupo_separacion = QGroupBox("Separación en Entrenamiento y Test")
         layout_separacion = QHBoxLayout()
 
-        # Campo: Porcentaje de Test
         layout_pct = QVBoxLayout()
         layout_pct.addWidget(QLabel("Porcentaje Test (%):"))
         self.txt_porcentaje = QLineEdit("20")
         self.txt_porcentaje.textChanged.connect(self.actualizar_porcentaje_entrenamiento)
         layout_pct.addWidget(self.txt_porcentaje)
 
-        # Etiqueta: Porcentaje de Entrenamiento (calculado automáticamente)
         layout_train = QVBoxLayout()
         layout_train.addWidget(QLabel("Porcentaje Entrenamiento:"))
         self.lbl_train = QLabel("80%")
         layout_train.addWidget(self.lbl_train)
 
-        # Campo: Semilla Aleatoria
         layout_semilla = QVBoxLayout()
         layout_semilla.addWidget(QLabel("Semilla Aleatoria:"))
         self.txt_semilla = QLineEdit("42")
@@ -116,17 +114,50 @@ class VentanaPrincipal(QMainWindow):
 
         # Botón para Separar Datos
         self.btn_separar = QPushButton("Separar datos")
-        self.btn_separar.setEnabled(False) # Se habilita al confirmar las columnas
+        self.btn_separar.setEnabled(False)
         self.btn_separar.clicked.connect(self.ejecutar_separacion)
         self.layout_principal.addWidget(self.btn_separar)
 
-        # --- ZONA DE PREPROCESADO (Panel Integrado) ---
+        # --- ZONA DE PREPROCESADO ---
         self.panel_preprocesado = PanelPreprocesado()
         self.panel_preprocesado.aplicado.connect(self.on_preprocesado_aplicado)
         self.layout_principal.addWidget(self.panel_preprocesado)
 
+        # --- ZONA DE CREACIÓN DE MODELO Y MÉTRICAS (Tarea #121) ---
+        self.grupo_modelo = QGroupBox("Modelo y Evaluación")
+        layout_modelo = QVBoxLayout()
+
+        self.btn_crear_modelo = QPushButton("Crear modelo")
+        self.btn_crear_modelo.setEnabled(False)
+        self.btn_crear_modelo.clicked.connect(self.ejecutar_creacion_modelo)
+        layout_modelo.addWidget(self.btn_crear_modelo)
+
+        # Etiqueta para la fórmula
+        self.lbl_formula = QLabel("Fórmula: (Modelo no creado)")
+        self.lbl_formula.setStyleSheet("font-weight: bold; color: #2c3e50; font-size: 14px;")
+        self.lbl_formula.setWordWrap(True)
+        layout_modelo.addWidget(self.lbl_formula)
+
+        # Tabla comparativa de métricas
+        self.tabla_metricas = QTableWidget(2, 2)
+        self.tabla_metricas.setHorizontalHeaderLabels(["Entrenamiento", "Test"])
+        self.tabla_metricas.setVerticalHeaderLabels(["R²", "ECM"])
+        self.tabla_metricas.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.tabla_metricas.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tabla_metricas.setFixedHeight(95)
+        self.limpiar_metricas()
+        layout_modelo.addWidget(self.tabla_metricas)
+
+        # --- ZONA DE GRÁFICO (Tarea #120 / #124) ---
+        self.figura, self.ax = plt.subplots(figsize=(6, 4))
+        self.canvas = FigureCanvas(self.figura)
+        layout_modelo.addWidget(self.canvas)
+
+        self.grupo_modelo.setLayout(layout_modelo)
+        self.layout_principal.addWidget(self.grupo_modelo)
+
+
     def actualizar_porcentaje_entrenamiento(self, texto):
-        """Calcula visualmente el porcentaje complementario en tiempo real."""
         try:
             valor_test = float(texto.replace(',', '.'))
             if 0 <= valor_test <= 100:
@@ -136,20 +167,38 @@ class VentanaPrincipal(QMainWindow):
         except ValueError:
             self.lbl_train.setText("N/A")
 
+    def limpiar_metricas(self):
+        """Reinicia la visualización de la fórmula y la tabla de métricas."""
+        self.lbl_formula.setText("Fórmula: (Modelo no creado)")
+        for fila in range(2):
+            for col in range(2):
+                self.tabla_metricas.setItem(fila, col, QTableWidgetItem("-"))
+        if hasattr(self, 'ax'):
+            self.ax.clear()
+            self.canvas.draw()
+
     def limpiar_estado_flujo(self):
         """Descarta la separación y futuros modelos cuando cambia el dataset o las columnas."""
         self.df_entrenamiento = None
         self.df_test = None
+        self.modelo_actual = None
         self.panel_preprocesado.invalidar()
+        if hasattr(self, "btn_crear_modelo"):
+            self.btn_crear_modelo.setEnabled(False)
+            self.limpiar_metricas()
+
+    def actualizar_estado_modelo(self):
+        """Habilita el botón de crear modelo si hay datos y no quedan NaN pendientes."""
+        if self.df_entrenamiento is not None and self.df_test is not None:
+            pendientes = self.panel_preprocesado.hay_pendientes()
+            self.btn_crear_modelo.setEnabled(not pendientes)
+        else:
+            self.btn_crear_modelo.setEnabled(False)
 
     def abrir_explorador_archivos(self):
         filtros = "Archivos compatibles (*.csv *.xlsx *.xls *.sqlite *.db)"
-
         ruta_archivo, _ = QFileDialog.getOpenFileName(
-            self,
-            "Selecciona el dataset",
-            "",
-            filtros
+            self, "Selecciona el dataset", "", filtros
         )
 
         if not ruta_archivo:
@@ -163,24 +212,20 @@ class VentanaPrincipal(QMainWindow):
             self.tabla.mostrar(df)
             self.datos = df
             
-            # Al cargar datos nuevos, poblamos los selectores
             self.actualizar_selectores(df.columns.tolist())
             self.btn_confirmar.setEnabled(True)
             
-            # Flujo: Bloqueamos separación y limpiamos estados antiguos
             self.btn_separar.setEnabled(False)
             self.limpiar_estado_flujo()
 
         except ErrorImportacion as e:
             QMessageBox.critical(self, "Error de importación", str(e))
         except Exception as e:
-            QMessageBox.critical(self, "Error inesperado", f"Ocurrió un error inesperado al leer el archivo:\n{str(e)}")
+            QMessageBox.critical(self, "Error inesperado", f"Ocurrió un error inesperado:\n{str(e)}")
 
     def actualizar_selectores(self, columnas):
-        """Limpia y rellena las listas con las columnas del nuevo dataset."""
         self.lista_features.clear()
         self.combo_target.clear()
-        
         self.combo_target.addItem("-- Selecciona una salida --", userData=None)
 
         for col in columnas:
@@ -188,7 +233,6 @@ class VentanaPrincipal(QMainWindow):
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(Qt.CheckState.Unchecked)
             self.lista_features.addItem(item)
-            
             self.combo_target.addItem(col)
 
     def confirmar_seleccion(self):
@@ -204,7 +248,6 @@ class VentanaPrincipal(QMainWindow):
 
         try:
             validar_seleccion(self.datos, features, target)
-            
             self.features_seleccionadas = features
             self.target_seleccionado = target
             
@@ -214,7 +257,6 @@ class VentanaPrincipal(QMainWindow):
                 f"Entradas (Features): {', '.join(features)}\nSalida (Target): {target}"
             )
 
-            # Flujo: Al confirmar columnas correctamente, habilitamos la separación
             self.btn_separar.setEnabled(True)
             self.limpiar_estado_flujo()
             
@@ -222,11 +264,9 @@ class VentanaPrincipal(QMainWindow):
             QMessageBox.warning(self, "Error de Validación", str(e))
 
     def ejecutar_separacion(self):
-        # 1. Capturar los textos de la interfaz gráfica
         texto_pct = self.txt_porcentaje.text().replace(',', '.')
         texto_sem = self.txt_semilla.text()
 
-        # 2. Conversión básica para enviar parámetros al Core
         try:
             pct_test = float(texto_pct)
         except ValueError:
@@ -240,27 +280,25 @@ class VentanaPrincipal(QMainWindow):
             except ValueError:
                 semilla = texto_sem 
 
-        # 3. Ejecutar la función lógica de separación
         try:
             self.limpiar_estado_flujo()
-
             train, test = separar_datos(self.datos, porcentaje_test=pct_test, semilla=semilla)
             
             self.df_entrenamiento = train
             self.df_test = test
 
-            # Configuramos el panel de preprocesado con los nuevos conjuntos y columnas analizadas
             columnas_analisis = self.features_seleccionadas + [self.target_seleccionado]
             self.panel_preprocesado.establecer_conjuntos(train, test, columnas_analisis)
 
-            # Visualización de confirmación
             QMessageBox.information(
                 self,
                 "Separación Completada",
-                f"La división de datos se ha realizado correctamente.\n\n"
-                f"Filas de Entrenamiento: {len(train)}\n"
-                f"Filas de Test: {len(test)}"
+                f"La división se ha realizado correctamente.\n\n"
+                f"Filas Entrenamiento: {len(train)}\n"
+                f"Filas Test: {len(test)}"
             )
+            
+            self.actualizar_estado_modelo()
 
         except ErrorSeparacion as e:
             QMessageBox.warning(self, "Error de Separación", str(e))
@@ -268,15 +306,73 @@ class VentanaPrincipal(QMainWindow):
             QMessageBox.critical(self, "Error Inesperado", str(e))
 
     def on_preprocesado_aplicado(self, entrenamiento, test):
-        """Actualiza los datasets con los datos ya tratados procedentes del panel."""
+        """Actualiza datasets procesados y verifica si se puede entrenar."""
         self.df_entrenamiento = entrenamiento
         self.df_test = test
+        self.actualizar_estado_modelo()
 
-
-        def actualizar_estado_modelo(self):
-            pendientes = self.panel_preprocesado.hay_pendientes()
-            if hasattr(self, "btn_crear_modelo"):
-                self.btn_crear_modelo.setEnabled(not pendientes)
+    def ejecutar_creacion_modelo(self):
+        """Crea el modelo de regresión, calcula métricas y actualiza el gráfico."""
+        try:
+            self.modelo_actual = entrenar_modelo(
+                self.df_entrenamiento, 
+                self.features_seleccionadas, 
+                self.target_seleccionado
+            )
+            
+            formula = generar_formula(self.modelo_actual)
+            self.lbl_formula.setText(formula)
+            
+            metricas = evaluar_modelo(self.modelo_actual, self.df_entrenamiento, self.df_test)
+            
+            self.tabla_metricas.setItem(0, 0, QTableWidgetItem(f"{metricas['entrenamiento']['r2']:.4f}"))
+            self.tabla_metricas.setItem(0, 1, QTableWidgetItem(f"{metricas['test']['r2']:.4f}"))
+            self.tabla_metricas.setItem(1, 0, QTableWidgetItem(f"{metricas['entrenamiento']['ecm']:.4f}"))
+            self.tabla_metricas.setItem(1, 1, QTableWidgetItem(f"{metricas['test']['ecm']:.4f}"))
+            
+            self.ax.clear()
+            
+            if len(self.features_seleccionadas) == 1:
+                feature = self.features_seleccionadas[0]
+                target = self.target_seleccionado
+                
+                self.ax.scatter(self.df_entrenamiento[feature], self.df_entrenamiento[target], 
+                                color='blue', alpha=0.5, label='Entrenamiento')
+                self.ax.scatter(self.df_test[feature], self.df_test[target], 
+                                color='red', alpha=0.5, label='Test')
+                
+                x_vals = self.df_entrenamiento[[feature]]
+                y_pred_linea = self.modelo_actual.estimador.predict(x_vals)
+                self.ax.plot(x_vals, y_pred_linea, color='black', linewidth=2, label='Ajuste')
+                
+                self.ax.set_xlabel(feature)
+                self.ax.set_ylabel(target)
+                self.ax.set_title("Regresión Lineal Simple")
+                
+            else:
+                y_train_pred = self.modelo_actual.estimador.predict(self.df_entrenamiento[self.features_seleccionadas])
+                y_test_pred = self.modelo_actual.estimador.predict(self.df_test[self.features_seleccionadas])
+                
+                self.ax.scatter(self.df_entrenamiento[self.target_seleccionado], y_train_pred, 
+                                color='blue', alpha=0.5, label='Entrenamiento')
+                self.ax.scatter(self.df_test[self.target_seleccionado], y_test_pred, 
+                                color='red', alpha=0.5, label='Test')
+                
+                min_val = min(self.df_entrenamiento[self.target_seleccionado].min(), y_train_pred.min())
+                max_val = max(self.df_entrenamiento[self.target_seleccionado].max(), y_train_pred.max())
+                self.ax.plot([min_val, max_val], [min_val, max_val], color='black', linestyle='--', label='Recta ideal')
+                
+                self.ax.set_xlabel("Valor Real")
+                self.ax.set_ylabel("Valor Predicho")
+                self.ax.set_title("Regresión Lineal Múltiple")
+                
+            self.ax.legend()
+            self.canvas.draw()
+            
+            QMessageBox.information(self, "Éxito", "El modelo se ha creado y evaluado correctamente.")
+            
+        except ErrorModelo as e:
+            QMessageBox.critical(self, "Error al crear el modelo", str(e))
 
 
 if __name__ == "__main__":

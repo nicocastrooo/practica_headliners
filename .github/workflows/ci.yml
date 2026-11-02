@@ -1,18 +1,16 @@
-name: Pruebas Automatizadas (pytest)
+name: Integración Continua (CI)
 
 on:
   push:
-    branches: [ "**" ]
-  pull_request:
-    branches: [ main, dev ]
+    branches: [ "**" ] # Se ejecuta en cualquier rama
 
 jobs:
   test:
-    name: Ejecutar pytest con uv
+    name: Pruebas automatizadas
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar el código del repositorio
+      - name: Descargar el código
         uses: actions/checkout@v4
 
       - name: Instalar dependencias del sistema para PySide6 y Xvfb
@@ -20,19 +18,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0 libxcb-cursor0 libegl1 libgl1
 
-      - name: Instalar uv y activar caché
+      - name: Instalar uv y caché
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Configurar versión de Python del proyecto
+      - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version-file: ".python-version"
 
-      - name: Instalar dependencias exactas del uv.lock
-        run: uv sync --frozen
+      - name: Instalar dependencias bloqueadas (falla si uv.lock no está actualizado)
+        run: uv sync --locked
 
-      - name: Ejecutar todas las pruebas con pytest sobre el monitor virtual
+      - name: Ejecutar pruebas
         run: xvfb-run -a uv run pytest -v
