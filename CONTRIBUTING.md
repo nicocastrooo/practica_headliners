@@ -31,3 +31,10 @@ git merge dev
 git tag -a v0.2.0 -m "Versión 0.2.0"
 git push origin main
 git push origin v0.2.0
+
+
+## Reglas de Fusión e Integración Continua (CI)
+
+1. **Fusión de ramas de trabajo a `dev`**: Una rama (`feature`, `fix`, o `docs`) solo se fusionará en `dev` si las pruebas pasan en local **y** su última ejecución en GitHub Actions ha terminado correctamente (check verde).
+2. **Mantenimiento de `dev`**: Después de cada fusión en `dev`, se comprobará que la ejecución de GitHub Actions sigue terminando correctamente. Si falla, se creará inmediatamente una tarea de corrección en Taiga y se arreglará en una rama `fix` antes de fusionar cualquier otra rama.
+3. **Fusión a `main`**: La rama `dev` solo se fusionará en `main` si su última ejecución en GitHub Actions ha terminado correctamente.
