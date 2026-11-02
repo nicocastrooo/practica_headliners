@@ -13,8 +13,9 @@ código de la aplicación, y no usa interfaz gráfica.
   `separar_datos` (separación en entrenamiento y test).
 
 La comparativa de librerías y la justificación de la elección están en
-[comparativa](comparativa_librerias.md).
-
+[comparativa de librerías](comparativa_librer%C3%ADas.md). Se eligió
+scikit-learn por su simplicidad, la gestión automática del término
+independiente y la disponibilidad directa de métricas como el ECM y el R².
 ## 2. Cómo se ejecuta
 
 Desde la raíz del repositorio, con los datasets guardados en la carpeta
