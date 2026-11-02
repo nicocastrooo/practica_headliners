@@ -50,3 +50,13 @@ uv run python main.py
 
 📂 Datasets de Ejemplo
 La aplicación incluye soporte para pruebas utilizando los datasets almacenados en la carpeta local data/. Puedes utilizarlos para validar el flujo completo de carga, selección, partición y preprocesado.
+
+## 🚀 Funcionalidades Incluidas (v0.2.0)
+
+En esta versión, la aplicación permite realizar el flujo completo de regresión lineal:
+- **Importación y lectura de datasets:** Soporte para cargar archivos CSV, Excel (.xlsx, .xls) y bases de datos SQLite desde la carpeta local `data/`.
+- **Selección de variables:** Selección de variables numéricas de entrada (features) y variable de salida (target).
+- **Separación Train/Test:** División aleatoria e interactiva del dataset en conjuntos de entrenamiento y prueba mediante porcentaje y semilla.
+- **Preprocesado de nulos:** Detección de valores inexistentes (NaN) y aplicación de 4 estrategias (Eliminar filas, Media, Mediana, Valor constante) evitando el *data leakage*.
+- **Creación y Evaluación del Modelo:** Entrenamiento de modelos de regresión lineal (simple y múltiple) calculando el Error Cuadrático Medio (ECM) y el Coeficiente de Determinación (R²) para entrenamiento y test.
+- **Visualización:** Representación gráfica del ajuste del modelo (nubes de puntos y recta de ajuste) y generación automática de la fórmula matemática.
