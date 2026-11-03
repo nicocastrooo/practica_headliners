@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QPushButton, QLabel, QFileDialog,
                                QMessageBox, QGroupBox, QListWidget, QListWidgetItem, 
                                QComboBox, QLineEdit, QTableWidget, QTableWidgetItem, 
-                               QHeaderView, QAbstractItemView)
+                               QHeaderView, QAbstractItemView, QScrollArea)
 from PySide6.QtCore import Qt
 
 from practica_headliners.importacion import importar_datos, ErrorImportacion
@@ -24,8 +24,8 @@ class VentanaPrincipal(QMainWindow):
         self.resize(1024, 768)
 
         self.widget_central = QWidget()
-        self.widget_central = QWidget()
         
+        # Área de scroll para que el gráfico no se aplaste en pantallas pequeñas
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.scroll.setWidget(self.widget_central)
@@ -43,7 +43,7 @@ class VentanaPrincipal(QMainWindow):
         self.lbl_ruta = QLabel("Ningún archivo seleccionado")
 
         layout_superior.addWidget(self.btn_cargar)
-        self.layout_principal.addWidget(self.tabla)
+        layout_superior.addWidget(self.lbl_ruta, stretch=1)
 
         self.layout_principal.addLayout(layout_superior)
 
@@ -57,9 +57,9 @@ class VentanaPrincipal(QMainWindow):
         self.df_test = None
         self.modelo_actual = None
 
-        # Tabla de datos
+        # Tabla de datos (sin stretch para no acaparar espacio vertical)
         self.tabla = TablaDatos()
-        self.layout_principal.addWidget(self.tabla, stretch=1)
+        self.layout_principal.addWidget(self.tabla)
 
         # --- ZONA DE SELECTORES ---
         self.grupo_selectores = QGroupBox("Selección de Variables")
@@ -335,7 +335,7 @@ class VentanaPrincipal(QMainWindow):
             self.tabla_metricas.setItem(1, 0, QTableWidgetItem(f"{metricas['entrenamiento']['ecm']:.4f}"))
             self.tabla_metricas.setItem(1, 1, QTableWidgetItem(f"{metricas['test']['ecm']:.4f}"))
             
-            # Llamada limpia a tu widget (Tarea 120)
+            # Llamada limpia al widget GraficoRegresion respetando MVC
             self.widget_grafico.dibujar_grafico(
                 df_train=self.df_entrenamiento,
                 df_test=self.df_test,
