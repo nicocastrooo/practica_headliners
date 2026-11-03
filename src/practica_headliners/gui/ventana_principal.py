@@ -1,7 +1,5 @@
 import sys
 from pathlib import Path
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QPushButton, QLabel, QFileDialog,
                                QMessageBox, QGroupBox, QListWidget, QListWidgetItem, 
@@ -14,6 +12,7 @@ from practica_headliners.gui.tabla_datos import TablaDatos
 from practica_headliners.seleccion import validar_seleccion, ErrorSeleccion
 from practica_headliners.separacion import separar_datos, ErrorSeparacion
 from practica_headliners.gui.panel_preprocesado import PanelPreprocesado
+from practica_headliners.gui.grafico import GraficoRegresion
 from practica_headliners.modelo import (
     entrenar_modelo, evaluar_modelo, generar_formula, ErrorModelo
 )
@@ -145,16 +144,17 @@ class VentanaPrincipal(QMainWindow):
         self.tabla_metricas.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.tabla_metricas.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tabla_metricas.setFixedHeight(95)
-        self.limpiar_metricas()
         layout_modelo.addWidget(self.tabla_metricas)
 
         # --- ZONA DE GRÁFICO (Tarea #120 / #124) ---
-        self.figura, self.ax = plt.subplots(figsize=(6, 4))
-        self.canvas = FigureCanvas(self.figura)
-        layout_modelo.addWidget(self.canvas)
+        self.widget_grafico = GraficoRegresion()
+        self.widget_grafico.setMinimumHeight(350)
+        layout_modelo.addWidget(self.widget_grafico)
 
         self.grupo_modelo.setLayout(layout_modelo)
         self.layout_principal.addWidget(self.grupo_modelo)
+        
+        self.limpiar_metricas()
 
 
     def actualizar_porcentaje_entrenamiento(self, texto):
@@ -168,14 +168,14 @@ class VentanaPrincipal(QMainWindow):
             self.lbl_train.setText("N/A")
 
     def limpiar_metricas(self):
-        """Reinicia la visualización de la fórmula y la tabla de métricas."""
+        """Reinicia la visualización de la fórmula, métricas y gráfico."""
         self.lbl_formula.setText("Fórmula: (Modelo no creado)")
         for fila in range(2):
             for col in range(2):
                 self.tabla_metricas.setItem(fila, col, QTableWidgetItem("-"))
-        if hasattr(self, 'ax'):
-            self.ax.clear()
-            self.canvas.draw()
+        if hasattr(self, 'widget_grafico'):
+            self.widget_grafico.ax.clear()
+            self.widget_grafico.canvas.draw()
 
     def limpiar_estado_flujo(self):
         """Descarta la separación y futuros modelos cuando cambia el dataset o las columnas."""
@@ -330,44 +330,14 @@ class VentanaPrincipal(QMainWindow):
             self.tabla_metricas.setItem(1, 0, QTableWidgetItem(f"{metricas['entrenamiento']['ecm']:.4f}"))
             self.tabla_metricas.setItem(1, 1, QTableWidgetItem(f"{metricas['test']['ecm']:.4f}"))
             
-            self.ax.clear()
-            
-            if len(self.features_seleccionadas) == 1:
-                feature = self.features_seleccionadas[0]
-                target = self.target_seleccionado
-                
-                self.ax.scatter(self.df_entrenamiento[feature], self.df_entrenamiento[target], 
-                                color='blue', alpha=0.5, label='Entrenamiento')
-                self.ax.scatter(self.df_test[feature], self.df_test[target], 
-                                color='red', alpha=0.5, label='Test')
-                
-                x_vals = self.df_entrenamiento[[feature]]
-                y_pred_linea = self.modelo_actual.estimador.predict(x_vals)
-                self.ax.plot(x_vals, y_pred_linea, color='black', linewidth=2, label='Ajuste')
-                
-                self.ax.set_xlabel(feature)
-                self.ax.set_ylabel(target)
-                self.ax.set_title("Regresión Lineal Simple")
-                
-            else:
-                y_train_pred = self.modelo_actual.estimador.predict(self.df_entrenamiento[self.features_seleccionadas])
-                y_test_pred = self.modelo_actual.estimador.predict(self.df_test[self.features_seleccionadas])
-                
-                self.ax.scatter(self.df_entrenamiento[self.target_seleccionado], y_train_pred, 
-                                color='blue', alpha=0.5, label='Entrenamiento')
-                self.ax.scatter(self.df_test[self.target_seleccionado], y_test_pred, 
-                                color='red', alpha=0.5, label='Test')
-                
-                min_val = min(self.df_entrenamiento[self.target_seleccionado].min(), y_train_pred.min())
-                max_val = max(self.df_entrenamiento[self.target_seleccionado].max(), y_train_pred.max())
-                self.ax.plot([min_val, max_val], [min_val, max_val], color='black', linestyle='--', label='Recta ideal')
-                
-                self.ax.set_xlabel("Valor Real")
-                self.ax.set_ylabel("Valor Predicho")
-                self.ax.set_title("Regresión Lineal Múltiple")
-                
-            self.ax.legend()
-            self.canvas.draw()
+            # Llamada limpia a tu widget (Tarea 120)
+            self.widget_grafico.dibujar_grafico(
+                df_train=self.df_entrenamiento,
+                df_test=self.df_test,
+                features=self.features_seleccionadas,
+                target=self.target_seleccionado,
+                modelo=self.modelo_actual.estimador 
+            )
             
             QMessageBox.information(self, "Éxito", "El modelo se ha creado y evaluado correctamente.")
             
