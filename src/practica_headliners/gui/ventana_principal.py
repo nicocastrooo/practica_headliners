@@ -24,7 +24,12 @@ class VentanaPrincipal(QMainWindow):
         self.resize(1024, 768)
 
         self.widget_central = QWidget()
-        self.setCentralWidget(self.widget_central)
+        self.widget_central = QWidget()
+        
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setWidget(self.widget_central)
+        self.setCentralWidget(self.scroll)
 
         # Layout principal de la ventana
         self.layout_principal = QVBoxLayout(self.widget_central)
@@ -38,7 +43,7 @@ class VentanaPrincipal(QMainWindow):
         self.lbl_ruta = QLabel("Ningún archivo seleccionado")
 
         layout_superior.addWidget(self.btn_cargar)
-        layout_superior.addWidget(self.lbl_ruta, stretch=1)
+        self.layout_principal.addWidget(self.tabla)
 
         self.layout_principal.addLayout(layout_superior)
 
