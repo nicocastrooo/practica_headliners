@@ -20,6 +20,7 @@ class ModeloLineal:
     estimador: LinearRegression
     entradas: list
     salida: str
+    descripcion: str = ""
 
     @property
     def coeficientes(self):
