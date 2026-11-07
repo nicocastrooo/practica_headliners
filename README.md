@@ -7,7 +7,7 @@ Repositorio oficial del proyecto de desarrollo de software para la asignatura de
 
 ---
 
-## 🚀 Funcionalidades Incluidas (v0.1.0)
+## Funcionalidades Incluidas (v0.1.0)
 
 Esta primera versión del proyecto incluye el flujo completo de preparación de datos:
 * **Importación y lectura de datasets:** Soporte para cargar archivos de datos de ejemplo desde la carpeta local `data/` directamente en la interfaz gráfica.
@@ -20,14 +20,14 @@ Esta primera versión del proyecto incluye el flujo completo de preparación de 
 
 ---
 
-## 📋 Requisitos del Sistema
+## Requisitos del Sistema
 
 * **Python** `>=3.12`
 * **uv** (Gestor de paquetes moderno para Python) instalado en el sistema.
 
 ---
 
-## 🛠️ Guía de Instalación y Despliegue
+## Guía de Instalación y Despliegue
 
 Para clonar y poner en entorno de desarrollo local, sigue estos pasos:
 
@@ -48,10 +48,10 @@ Bash
 uv run python main.py
 (Nota: Asegúrate de comprobar el archivo de configuración si el punto de entrada principal tuviera otra ruta).
 
-📂 Datasets de Ejemplo
+Datasets de Ejemplo
 La aplicación incluye soporte para pruebas utilizando los datasets almacenados en la carpeta local data/. Puedes utilizarlos para validar el flujo completo de carga, selección, partición y preprocesado.
 
-## 🚀 Funcionalidades Incluidas (v0.2.0)
+## Funcionalidades Incluidas (v0.2.0)
 
 En esta versión, la aplicación permite realizar el flujo completo de regresión lineal:
 - **Importación y lectura de datasets:** Soporte para cargar archivos CSV, Excel (.xlsx, .xls) y bases de datos SQLite desde la carpeta local `data/`.
@@ -60,3 +60,10 @@ En esta versión, la aplicación permite realizar el flujo completo de regresió
 - **Preprocesado de nulos:** Detección de valores inexistentes (NaN) y aplicación de 4 estrategias (Eliminar filas, Media, Mediana, Valor constante) evitando el *data leakage*.
 - **Creación y Evaluación del Modelo:** Entrenamiento de modelos de regresión lineal (simple y múltiple) calculando el Error Cuadrático Medio (ECM) y el Coeficiente de Determinación (R²) para entrenamiento y test.
 - **Visualización:** Representación gráfica del ajuste del modelo (nubes de puntos y recta de ajuste) y generación automática de la fórmula matemática.
+
+```markdown
+## Advertencia de Seguridad sobre Modelos Externos
+
+La aplicación utiliza el formato de serialización `.joblib` para guardar y cargar modelos. Debido al diseño interno de este formato en Python, **cargar archivos `.joblib` de fuentes no confiables o desconocidas puede permitir la ejecución de código malicioso en tu ordenador**. 
+
+Solo debes cargar modelos generados por ti mismo o descargados de fuentes absolutamente fiables y conocidas.
