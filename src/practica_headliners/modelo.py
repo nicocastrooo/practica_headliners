@@ -1,31 +1,38 @@
 """Lógica del modelo de regresión lineal (independiente de la GUI)."""
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
 
+import joblib
+import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
 from practica_headliners.seleccion import ErrorSeleccion, validar_seleccion
 
 DECIMALES = 4
+EXTENSION_MODELO = ".joblib"
 
 
 class ErrorModelo(Exception):
-    """Error al crear o evaluar el modelo."""
+    """Error al crear, evaluar o guardar el modelo."""
 
 
 @dataclass
 class ModeloLineal:
-    """Modelo entrenado junto con las columnas que usa."""
+    """Modelo entrenado junto con las columnas y metadatos que usa."""
 
     estimador: LinearRegression
     entradas: list
     salida: str
-    descripcion: str = ""  # Campo de descripción inicializado vacío por defecto
+    descripcion: str = ""
+    metricas: Optional[dict] = None
 
     def actualizar_descripcion(self, nueva_descripcion: str):
         """Actualiza la descripción del modelo en memoria."""
-        self.descripcion = nueva_descripcion if nueva_descripcion is not None else ""
-    descripcion: str = ""
+        self.descripcion = (
+            nueva_descripcion if nueva_descripcion is not None else ""
+        )
 
     @property
     def coeficientes(self):
@@ -120,7 +127,7 @@ def calcular_metricas(modelo, datos):
 
 
 def evaluar_modelo(modelo, entrenamiento, test):
-    """Calcula las métricas en entrenamiento y en test.
+    """Calcula las métricas en entrenamiento y en test y las asocia al modelo.
 
     Returns:
         {"entrenamiento": {"r2", "ecm"}, "test": {"r2", "ecm"}}
@@ -128,10 +135,12 @@ def evaluar_modelo(modelo, entrenamiento, test):
     Raises:
         ErrorModelo: igual que `calcular_metricas`.
     """
-    return {
+    resultado = {
         "entrenamiento": calcular_metricas(modelo, entrenamiento),
         "test": calcular_metricas(modelo, test),
     }
+    modelo.metricas = resultado
+    return resultado
 
 
 def generar_formula(modelo, decimales=DECIMALES):
@@ -159,3 +168,83 @@ def generar_formula(modelo, decimales=DECIMALES):
     b = modelo.intercepto
     signo = " - " if round(b, decimales) < 0 else " + "
     return texto + signo + f"{abs(b):.{decimales}f}"
+
+
+def guardar_modelo(modelo, ruta, metricas=None):
+    """Guarda el modelo y sus metadatos en disco usando joblib.
+
+    Sigue la estructura documentada en la HU #20 y garantiza que no se
+    incluyan conjuntos de datos (DataFrames) ni objetos gráficos.
+
+    Args:
+        modelo: instancia de ModeloLineal entrenada.
+        ruta: ruta (str o Path) donde se guardará el archivo.
+        metricas: diccionario opcional con las métricas de entrenamiento
+            y test si no están ya almacenadas en `modelo.metricas`.
+
+    Returns:
+        Path absoluto del archivo guardado.
+
+    Raises:
+        ErrorModelo: si el modelo no es válido, faltan las métricas o se
+            produce un error de escritura en disco (ej. falta de permisos).
+    """
+    if not isinstance(modelo, ModeloLineal) or modelo.estimador is None:
+        raise ErrorModelo("No hay un modelo válido para guardar.")
+
+    if not ruta or str(ruta).strip() == "":
+        raise ErrorModelo("La ruta del archivo no puede estar vacía.")
+
+    metricas_guardar = metricas if metricas is not None else modelo.metricas
+    if not metricas_guardar:
+        raise ErrorModelo(
+            "El modelo no dispone de métricas de evaluación para guardar."
+        )
+
+    ruta_destino = Path(ruta)
+    if ruta_destino.suffix.lower() != EXTENSION_MODELO:
+        ruta_destino = ruta_destino.with_suffix(EXTENSION_MODELO)
+
+    # Reconstruimos un estimador limpio solo con los parámetros matemáticos
+    # para garantizar a nivel de código que no se filtren datos ni gráficos.
+    estimador_limpio = LinearRegression()
+    estimador_limpio.coef_ = np.array(modelo.estimador.coef_, copy=True)
+    estimador_limpio.intercept_ = float(modelo.estimador.intercept_)
+    if hasattr(modelo.estimador, "n_features_in_"):
+        estimador_limpio.n_features_in_ = int(modelo.estimador.n_features_in_)
+    if hasattr(modelo.estimador, "feature_names_in_"):
+        estimador_limpio.feature_names_in_ = np.array(
+            modelo.estimador.feature_names_in_, copy=True
+        )
+
+    contenido = {
+        "modelo": estimador_limpio,
+        "metadata": {
+            "descripcion": (
+                str(modelo.descripcion)
+                if modelo.descripcion is not None else ""
+            ),
+            "entradas": list(modelo.entradas),
+            "salida": str(modelo.salida),
+            "formula": generar_formula(modelo),
+            "metricas": {
+                "entrenamiento": {
+                    "r2": float(metricas_guardar["entrenamiento"]["r2"]),
+                    "ecm": float(metricas_guardar["entrenamiento"]["ecm"]),
+                },
+                "test": {
+                    "r2": float(metricas_guardar["test"]["r2"]),
+                    "ecm": float(metricas_guardar["test"]["ecm"]),
+                },
+            },
+        },
+    }
+
+    try:
+        joblib.dump(contenido, ruta_destino)
+    except Exception as error:
+        raise ErrorModelo(
+            f"No se pudo guardar el modelo en '{ruta_destino}': {error}"
+        ) from error
+
+    return ruta_destino.resolve()
