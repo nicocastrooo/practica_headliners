@@ -20,6 +20,11 @@ class ModeloLineal:
     estimador: LinearRegression
     entradas: list
     salida: str
+    descripcion: str = ""  # Campo de descripción inicializado vacío por defecto
+
+    def actualizar_descripcion(self, nueva_descripcion: str):
+        """Actualiza la descripción del modelo en memoria."""
+        self.descripcion = nueva_descripcion if nueva_descripcion is not None else ""
 
     @property
     def coeficientes(self):
