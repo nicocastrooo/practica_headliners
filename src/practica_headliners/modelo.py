@@ -25,6 +25,7 @@ class ModeloLineal:
     def actualizar_descripcion(self, nueva_descripcion: str):
         """Actualiza la descripción del modelo en memoria."""
         self.descripcion = nueva_descripcion if nueva_descripcion is not None else ""
+    descripcion: str = ""
 
     @property
     def coeficientes(self):
