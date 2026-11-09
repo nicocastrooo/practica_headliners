@@ -159,27 +159,21 @@ def guardar_modelo(modelo: ModeloLineal, ruta: Path) -> Path:
         return ruta
     except Exception as e:
         raise ErrorModelo(f"Error al guardar el modelo: {e}") from e
-def calcular_metricas(modelo, datos):
-    """Calcula R² y ECM del modelo sobre un conjunto de datos.
-
-    Args:
-        modelo: ModeloLineal entrenado.
-        datos: DataFrame (entrenamiento o test) con entradas y salida.
-
-    Returns:
-        Diccionario {"r2": float, "ecm": float}. El R² es NaN si el
-        conjunto tiene menos de 2 filas, porque no está definido.
-
-    Raises:
-        ErrorModelo: si el conjunto está vacío, no tiene las columnas o
-            tiene valores inexistentes.
-    """
-    _comprobar(datos, modelo.entradas, modelo.salida, "datos")
-    real = datos[modelo.salida]
-    predicho = modelo.estimador.predict(datos[modelo.entradas])
-    r2 = r2_score(real, predicho) if len(datos) >= 2 else float("nan")
-    return {"r2": float(r2),
-            "ecm": float(mean_squared_error(real, predicho))}
+def calcular_metricas(modelo: ModeloLineal, df: pd.DataFrame, entradas: list = None, salida: str = None) -> dict:
+    """Calcula las métricas de rendimiento del modelo para un conjunto de datos."""
+    try:
+        cols_entradas = entradas if entradas is not None else modelo.entradas
+        col_salida = salida if salida is not None else modelo.salida
+        validar_seleccion(df, cols_entradas, col_salida)
+        X = df[cols_entradas]
+        y = df[col_salida]
+        predicciones = modelo.estimador.predict(X)
+        return {
+            "r2": round(r2_score(y, predicciones), DECIMALES),
+            "ecm": round(mean_squared_error(y, predicciones), DECIMALES)
+        }
+    except Exception as e:
+        raise ErrorModelo(f"Error al calcular las métricas: {e}") from e
 
 
 def evaluar_modelo(modelo, entrenamiento, test):
