@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QHeaderView,
     QScrollArea,
+    QTextEdit,
 )
 from PySide6.QtCore import Qt
  
@@ -179,7 +180,15 @@ class VentanaPrincipal(QMainWindow):
         )
         self.tabla_metricas.setFixedHeight(95)
         layout_modelo.addWidget(self.tabla_metricas)
- 
+
+        layout_modelo.addWidget(QLabel("Descripción (opcional):"))
+        self.txt_descripcion = QTextEdit()
+        self.txt_descripcion.setPlaceholderText("Escribe aquí una descripción o propósito para este modelo...")
+        self.txt_descripcion.setFixedHeight(60)
+        self.txt_descripcion.setEnabled(False) 
+        self.txt_descripcion.textChanged.connect(self.actualizar_descripcion_modelo)
+        layout_modelo.addWidget(self.txt_descripcion)
+
         # Widget del gráfico integrado desde grafico.py (Tarea #120)
         self.grafico = GraficoRegresion()
         self.grafico.setMinimumHeight(350)
@@ -201,13 +210,18 @@ class VentanaPrincipal(QMainWindow):
             self.lbl_train.setText("N/A")
  
     def limpiar_metricas(self):
-        """Reinicia la visualización de la fórmula, la tabla de métricas y el gráfico."""
+        """Reinicia la visualización de la fórmula, la tabla de métricas, el gráfico y la descripción."""
         self.lbl_formula.setText("Fórmula: (Modelo no creado)")
         for fila in range(2):
             for col in range(2):
                 self.tabla_metricas.setItem(fila, col, QTableWidgetItem("-"))
         if hasattr(self, "grafico"):
             self.grafico.limpiar_grafico()
+            
+        # Ocultar y limpiar la descripción si no hay modelo activo
+        if hasattr(self, "txt_descripcion"):
+            self.txt_descripcion.clear()
+            self.txt_descripcion.setEnabled(False)
  
     def limpiar_estado_flujo(self):
         """Descarta la separación y futuros modelos cuando cambia el dataset o las columnas."""
@@ -361,14 +375,14 @@ class VentanaPrincipal(QMainWindow):
                 self.features_seleccionadas,
                 self.target_seleccionado,
             )
- 
+
             formula = generar_formula(self.modelo_actual)
             self.lbl_formula.setText(formula)
- 
+
             metricas = evaluar_modelo(
                 self.modelo_actual, self.df_entrenamiento, self.df_test
             )
- 
+
             self.tabla_metricas.setItem(
                 0, 0, QTableWidgetItem(f"{metricas['entrenamiento']['r2']:.4f}")
             )
@@ -381,7 +395,7 @@ class VentanaPrincipal(QMainWindow):
             self.tabla_metricas.setItem(
                 1, 1, QTableWidgetItem(f"{metricas['test']['ecm']:.4f}")
             )
- 
+
             self.grafico.dibujar_grafico(
                 self.df_entrenamiento,
                 self.df_test,
@@ -389,17 +403,26 @@ class VentanaPrincipal(QMainWindow):
                 self.target_seleccionado,
                 self.modelo_actual,
             )
- 
+
+            # Preparar la caja de descripción para el nuevo modelo
+            self.txt_descripcion.clear()
+            self.txt_descripcion.setEnabled(True)
+
             QMessageBox.information(
                 self,
                 "Éxito",
                 "El modelo se ha creado y evaluado correctamente.",
             )
- 
+
         except ErrorModelo as e:
             QMessageBox.critical(self, "Error al crear el modelo", str(e))
  
- 
+    def actualizar_descripcion_modelo(self):
+        """Actualiza la descripción en la estructura de memoria del modelo en tiempo real."""
+        if self.modelo_actual is not None:
+            texto = self.txt_descripcion.toPlainText()
+            self.modelo_actual.actualizar_descripcion(texto)
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ventana = VentanaPrincipal()
