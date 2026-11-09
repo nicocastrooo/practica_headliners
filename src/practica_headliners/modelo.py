@@ -174,8 +174,6 @@ def calcular_metricas(modelo: ModeloLineal, df: pd.DataFrame, entradas: list = N
         }
     except Exception as e:
         raise ErrorModelo(f"Error al calcular las métricas: {e}") from e
-
-
 def evaluar_modelo(modelo, entrenamiento, test):
     """Calcula las métricas en entrenamiento y en test y las asocia al modelo.
 
