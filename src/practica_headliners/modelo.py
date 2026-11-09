@@ -1,15 +1,12 @@
 """Lógica del modelo de regresión lineal (independiente de la GUI)."""
 from dataclasses import dataclass
 from pathlib import Path
-<<<<<<< HEAD
 import joblib
 import pandas as pd
-=======
 from typing import Optional
 
 import joblib
 import numpy as np
->>>>>>> bc4bf7097598c08e58048351247c5ce73a7be9b3
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
@@ -25,27 +22,21 @@ class ErrorModelo(Exception):
 
 @dataclass
 class ModeloLineal:
-<<<<<<< HEAD
     """Modelo entrenado junto con las columnas que usa."""
-=======
     """Modelo entrenado junto con las columnas y metadatos que usa."""
 
->>>>>>> bc4bf7097598c08e58048351247c5ce73a7be9b3
     estimador: LinearRegression
     entradas: list
     salida: str
     descripcion: str = ""
     metricas: Optional[dict] = None
 
-<<<<<<< HEAD
-=======
     def actualizar_descripcion(self, nueva_descripcion: str):
         """Actualiza la descripción del modelo en memoria."""
         self.descripcion = (
             nueva_descripcion if nueva_descripcion is not None else ""
         )
 
->>>>>>> bc4bf7097598c08e58048351247c5ce73a7be9b3
     @property
     def coeficientes(self):
         """Devuelve los coeficientes del estimador para cumplir con los tests."""
@@ -106,7 +97,6 @@ def evaluar_modelo(modelo: ModeloLineal, df_entrenamiento: pd.DataFrame, df_test
         raise ErrorModelo(f"Error al evaluar el modelo: {e}") from e
 
 
-<<<<<<< HEAD
 def generar_formula(modelo: ModeloLineal, decimales: int = DECIMALES) -> str:
     """Genera la fórmula matemática del modelo lineal con el intercepto al final."""
     try:
@@ -169,7 +159,6 @@ def guardar_modelo(modelo: ModeloLineal, ruta: Path) -> Path:
         return ruta
     except Exception as e:
         raise ErrorModelo(f"Error al guardar el modelo: {e}") from e
-=======
 def calcular_metricas(modelo, datos):
     """Calcula R² y ECM del modelo sobre un conjunto de datos.
 
@@ -315,4 +304,3 @@ def guardar_modelo(modelo, ruta, metricas=None):
         ) from error
 
     return ruta_destino.resolve()
->>>>>>> bc4bf7097598c08e58048351247c5ce73a7be9b3
