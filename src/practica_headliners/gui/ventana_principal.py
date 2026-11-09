@@ -33,6 +33,8 @@ from practica_headliners.modelo import (
     entrenar_modelo,
     evaluar_modelo,
     generar_formula,
+    guardar_modelo,
+    EXTENSION_MODELO,
     ErrorModelo,
 )
  
@@ -161,6 +163,12 @@ class VentanaPrincipal(QMainWindow):
         self.btn_crear_modelo.setEnabled(False)
         self.btn_crear_modelo.clicked.connect(self.ejecutar_creacion_modelo)
         layout_modelo.addWidget(self.btn_crear_modelo)
+
+        # Botón para guardar el modelo en disco (Tarea #134)
+        self.btn_guardar = QPushButton("Guardar modelo")
+        self.btn_guardar.setEnabled(False)
+        self.btn_guardar.clicked.connect(self.guardar_modelo_en_disco)
+        layout_modelo.addWidget(self.btn_guardar)
  
         # Etiqueta para la fórmula
         self.lbl_formula = QLabel("Fórmula: (Modelo no creado)")
@@ -229,6 +237,8 @@ class VentanaPrincipal(QMainWindow):
         self.df_test = None
         self.modelo_actual = None
         self.panel_preprocesado.invalidar()
+        if hasattr(self, "btn_guardar"):
+            self.btn_guardar.setEnabled(False)
         if hasattr(self, "btn_crear_modelo"):
             self.btn_crear_modelo.setEnabled(False)
             self.limpiar_metricas()
@@ -382,6 +392,8 @@ class VentanaPrincipal(QMainWindow):
             metricas = evaluar_modelo(
                 self.modelo_actual, self.df_entrenamiento, self.df_test
             )
+            # Necesario para poder guardar el modelo (Tarea #134)
+            self.modelo_actual.metricas = metricas
 
             self.tabla_metricas.setItem(
                 0, 0, QTableWidgetItem(f"{metricas['entrenamiento']['r2']:.4f}")
@@ -407,6 +419,7 @@ class VentanaPrincipal(QMainWindow):
             # Preparar la caja de descripción para el nuevo modelo
             self.txt_descripcion.clear()
             self.txt_descripcion.setEnabled(True)
+            self.btn_guardar.setEnabled(True)
 
             QMessageBox.information(
                 self,
@@ -415,6 +428,7 @@ class VentanaPrincipal(QMainWindow):
             )
 
         except ErrorModelo as e:
+            self.btn_guardar.setEnabled(False)
             QMessageBox.critical(self, "Error al crear el modelo", str(e))
  
     def actualizar_descripcion_modelo(self):
@@ -423,9 +437,60 @@ class VentanaPrincipal(QMainWindow):
             texto = self.txt_descripcion.toPlainText()
             self.modelo_actual.actualizar_descripcion(texto)
 
+    def guardar_modelo_en_disco(self):
+        """Pide la ruta y guarda el modelo con avisos y control de errores."""
+        if self.modelo_actual is None:
+            return
+
+        if not (self.modelo_actual.descripcion or "").strip():
+            respuesta = QMessageBox.warning(
+                self,
+                "Descripción vacía",
+                "El modelo no tiene descripción. ¿Quieres guardarlo "
+                "igualmente?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if respuesta != QMessageBox.StandardButton.Yes:
+                return
+
+        ruta, _ = QFileDialog.getSaveFileName(
+            self, "Guardar modelo", "", f"Modelos (*{EXTENSION_MODELO})"
+        )
+        if not ruta:  # cerró el diálogo: no se hace nada
+            return
+
+        destino = Path(ruta)
+        if destino.suffix.lower() != EXTENSION_MODELO:
+            destino = destino.with_name(destino.name + EXTENSION_MODELO)
+            # el diálogo no conocía este nombre: preguntamos nosotros
+            if destino.exists():
+                respuesta = QMessageBox.question(
+                    self,
+                    "Sobrescribir",
+                    f"{destino.name} ya existe. ¿Quieres sobrescribirlo?",
+                    QMessageBox.StandardButton.Yes
+                    | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if respuesta != QMessageBox.StandardButton.Yes:
+                    return
+
+        try:
+            guardado = guardar_modelo(self.modelo_actual, destino)
+        except ErrorModelo as e:
+            QMessageBox.critical(
+                self, "No se pudo guardar", f"No se guardó el modelo:\n{e}"
+            )
+            return
+
+        QMessageBox.information(
+            self, "Modelo guardado", f"Modelo guardado en:\n{guardado}"
+        )
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ventana = VentanaPrincipal()
     ventana.show()
     sys.exit(app.exec())
- 
