@@ -79,9 +79,9 @@ class GraficoRegresion(QWidget):
                 alpha=0.8,
             )
 
-            # Recta de ajuste del modelo a lo largo de todo el rango de entrada
-            x_min = min(X_train[feature_name].min(), X_test[feature_name].min())
-            x_max = max(X_train[feature_name].max(), X_test[feature_name].max())
+            # Recta de ajuste desde el primer punto hasta el último punto en X
+            x_min = float(min(X_train[feature_name].min(), X_test[feature_name].min()))
+            x_max = float(max(X_train[feature_name].max(), X_test[feature_name].max()))
             x_line = np.linspace(x_min, x_max, 100)
 
             df_line = pd.DataFrame({feature_name: x_line})
@@ -125,21 +125,30 @@ class GraficoRegresion(QWidget):
                 alpha=0.8,
             )
 
-            # Recta ideal (Valor Real == Valor Predicho)
-            min_val = min(
-                y_train.min(), y_test.min(), y_pred_train.min(), y_pred_test.min()
-            )
-            max_val = max(
-                y_train.max(), y_test.max(), y_pred_train.max(), y_pred_test.max()
-            )
+            # Recta que empieza en el primer punto (x_min) y termina en el último punto (x_max)
+            # siguiendo la tendencia real de los datos en la gráfica
+            x_min = float(min(y_train.min(), y_test.min()))
+            x_max = float(max(y_train.max(), y_test.max()))
+            x_line = np.array([x_min, x_max])
+
+            y_train_arr = np.asarray(y_train, dtype=float)
+            y_pred_train_arr = np.asarray(y_pred_train, dtype=float)
+
+            if len(y_train_arr) >= 2 and float(np.std(y_train_arr)) > 0:
+                pendiente, intercepto = np.polyfit(
+                    y_train_arr, y_pred_train_arr, 1
+                )
+                y_line = pendiente * x_line + intercepto
+            else:
+                y_line = x_line
 
             self.ax.plot(
-                [min_val, max_val],
-                [min_val, max_val],
+                x_line,
+                y_line,
                 color="crimson",
                 linestyle="--",
                 linewidth=2,
-                label="Ajuste ideal (Real = Predicho)",
+                label="Recta de ajuste (Real vs Predicho)",
             )
 
             # Etiquetas diferenciando Salida Real, Salida Predicha y Entradas utilizadas
