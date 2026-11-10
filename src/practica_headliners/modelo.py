@@ -60,20 +60,7 @@ def _comprobar(datos, entradas, salida, conjunto):
 
 
 def entrenar_modelo(entrenamiento, entradas, salida):
-    """Ajusta un modelo de regresión lineal con el conjunto de entrenamiento.
-
-    Args:
-        entrenamiento: DataFrame de entrenamiento.
-        entradas: lista con los nombres de las columnas de entrada.
-        salida: nombre de la columna de salida.
-
-    Returns:
-        ModeloLineal entrenado únicamente con `entrenamiento`.
-
-    Raises:
-        ErrorModelo: si la selección no es válida, el conjunto está vacío
-            o quedan valores inexistentes en las columnas seleccionadas.
-    """
+    """Ajusta un modelo de regresión lineal con el conjunto de entrenamiento."""
     entradas = list(entradas)
     _comprobar(entrenamiento, entradas, salida, "entrenamiento")
     estimador = LinearRegression()
@@ -82,18 +69,7 @@ def entrenar_modelo(entrenamiento, entradas, salida):
 
 
 def predecir(modelo, datos):
-    """Devuelve las predicciones del modelo para las filas de `datos`.
-
-    Args:
-        modelo: ModeloLineal entrenado.
-        datos: DataFrame con, al menos, las columnas de entrada del modelo.
-
-    Returns:
-        Array de NumPy con un valor predicho por fila.
-
-    Raises:
-        ErrorModelo: si faltan columnas o hay valores inexistentes.
-    """
+    """Devuelve las predicciones del modelo para las filas de `datos`."""
     faltan = [c for c in modelo.entradas if c not in datos.columns]
     if faltan:
         raise ErrorModelo(
@@ -104,20 +80,7 @@ def predecir(modelo, datos):
 
 
 def calcular_metricas(modelo, datos):
-    """Calcula R² y ECM del modelo sobre un conjunto de datos.
-
-    Args:
-        modelo: ModeloLineal entrenado.
-        datos: DataFrame (entrenamiento o test) con entradas y salida.
-
-    Returns:
-        Diccionario {"r2": float, "ecm": float}. El R² es NaN si el
-        conjunto tiene menos de 2 filas, porque no está definido.
-
-    Raises:
-        ErrorModelo: si el conjunto está vacío, no tiene las columnas o
-            tiene valores inexistentes.
-    """
+    """Calcula R² y ECM del modelo sobre un conjunto de datos."""
     _comprobar(datos, modelo.entradas, modelo.salida, "datos")
     real = datos[modelo.salida]
     predicho = modelo.estimador.predict(datos[modelo.entradas])
@@ -127,14 +90,7 @@ def calcular_metricas(modelo, datos):
 
 
 def evaluar_modelo(modelo, entrenamiento, test):
-    """Calcula las métricas en entrenamiento y en test y las asocia al modelo.
-
-    Returns:
-        {"entrenamiento": {"r2", "ecm"}, "test": {"r2", "ecm"}}
-
-    Raises:
-        ErrorModelo: igual que `calcular_metricas`.
-    """
+    """Calcula las métricas en entrenamiento y en test y las asocia al modelo."""
     resultado = {
         "entrenamiento": calcular_metricas(modelo, entrenamiento),
         "test": calcular_metricas(modelo, test),
@@ -144,18 +100,7 @@ def evaluar_modelo(modelo, entrenamiento, test):
 
 
 def generar_formula(modelo, decimales=DECIMALES):
-    """Genera el texto de la fórmula del modelo.
-
-    Formato: salida = c1 * entrada1 + c2 * entrada2 + ... + intercepto.
-    Los números negativos se muestran restando (nunca "+ -").
-
-    Args:
-        modelo: ModeloLineal entrenado.
-        decimales: número fijo de decimales (4 por defecto).
-
-    Returns:
-        Cadena con la fórmula.
-    """
+    """Genera el texto de la fórmula del modelo."""
     texto = f"{modelo.salida} = "
     for i, (coef, nombre) in enumerate(
             zip(modelo.coeficientes, modelo.entradas)):
@@ -171,24 +116,7 @@ def generar_formula(modelo, decimales=DECIMALES):
 
 
 def guardar_modelo(modelo, ruta, metricas=None):
-    """Guarda el modelo y sus metadatos en disco usando joblib.
-
-    Sigue la estructura documentada en la HU #20 y garantiza que no se
-    incluyan conjuntos de datos (DataFrames) ni objetos gráficos.
-
-    Args:
-        modelo: instancia de ModeloLineal entrenada.
-        ruta: ruta (str o Path) donde se guardará el archivo.
-        metricas: diccionario opcional con las métricas de entrenamiento
-            y test si no están ya almacenadas en `modelo.metricas`.
-
-    Returns:
-        Path absoluto del archivo guardado.
-
-    Raises:
-        ErrorModelo: si el modelo no es válido, faltan las métricas o se
-            produce un error de escritura en disco (ej. falta de permisos).
-    """
+    """Guarda el modelo y sus metadatos en disco usando joblib."""
     if not isinstance(modelo, ModeloLineal) or modelo.estimador is None:
         raise ErrorModelo("No hay un modelo válido para guardar.")
 
@@ -207,8 +135,6 @@ def guardar_modelo(modelo, ruta, metricas=None):
     if ruta_destino.suffix.lower() != EXTENSION_MODELO:
         ruta_destino = ruta_destino.with_suffix(EXTENSION_MODELO)
 
-    # Reconstruimos un estimador limpio solo con los parámetros matemáticos
-    # para garantizar a nivel de código que no se filtren datos ni gráficos.
     estimador_limpio = LinearRegression()
     estimador_limpio.coef_ = np.array(modelo.estimador.coef_, copy=True)
     estimador_limpio.intercept_ = float(modelo.estimador.intercept_)
@@ -250,3 +176,29 @@ def guardar_modelo(modelo, ruta, metricas=None):
         ) from error
 
     return ruta_destino.resolve()
+
+
+def realizar_prediccion(modelo, valores_entrada):
+    """
+    Calcula el valor predicho (Y) a partir de un modelo entrenado y los valores de entrada (X).
+    Recibe un objeto ModeloLineal (o estimador) y un diccionario o lista con los valores numéricos.
+    """
+    if isinstance(valores_entrada, dict):
+        x_valores = list(valores_entrada.values())
+    else:
+        x_valores = list(valores_entrada)
+    
+    estimador = modelo.estimador if hasattr(modelo, "estimador") else modelo
+    
+    if not hasattr(estimador, "coef_") or not hasattr(estimador, "intercept_"):
+        raise ValueError("El modelo proporcionado no es válido o no está entrenado.")
+    
+    coeficientes = np.array(estimador.coef_)
+    x_array = np.array(x_valores)
+    
+    if len(coeficientes) != len(x_array):
+        raise ValueError("El número de variables de entrada no coincide con el modelo.")
+    
+    prediccion = np.dot(coeficientes, x_array) + estimador.intercept_
+    
+    return float(prediccion)

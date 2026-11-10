@@ -1,4 +1,5 @@
 """Pruebas unitarias para la lógica y estructura del modelo lineal."""
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -9,6 +10,7 @@ from practica_headliners.modelo import (
     entrenar_modelo,
     evaluar_modelo,
     generar_formula,
+    realizar_prediccion,
 )
 
 
@@ -125,3 +127,24 @@ def test_entrenar_modelo_con_nulos_lanza_error():
     })
     with pytest.raises(ErrorModelo):
         entrenar_modelo(datos, ["x1"], "y")
+
+
+# --- TAREA #137: Pruebas unitarias de predicción matemática ---
+
+def test_realizar_prediccion_matematica():
+    """Comprueba que la predicción coincide con el cálculo manual a partir de la fórmula del modelo."""
+    datos_prueba = pd.DataFrame({
+        "x1": [1.0, 2.0, 3.0, 4.0],
+        "x2": [2.0, 1.0, 4.0, 3.0],
+        "y": [8.0, 9.0, 16.0, 17.0]
+    })
+    modelo = entrenar_modelo(datos_prueba, ["x1", "x2"], "y")
+    
+    valores_prueba = [2.0, 3.0]
+    
+    resultado_prediccion = realizar_prediccion(modelo, valores_prueba)
+    
+    calculo_manual = (modelo.coeficientes[0] * valores_prueba[0]) + (modelo.coeficientes[1] * valores_prueba[1]) + modelo.intercepto
+    
+    assert isinstance(resultado_prediccion, float)
+    assert np.isclose(resultado_prediccion, calculo_manual)
