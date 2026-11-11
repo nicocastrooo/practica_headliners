@@ -148,3 +148,4 @@ def test_realizar_prediccion_matematica():
     
     assert isinstance(resultado_prediccion, float)
     assert np.isclose(resultado_prediccion, calculo_manual)
+    

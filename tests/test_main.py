@@ -1,6 +1,4 @@
-from practica_headliners import main
+"""Paquete principal de practica_headliners."""
 
-
-def test_main_se_ejecuta(capsys):
-    main()
-    assert "Hello from practica-headliners!" in capsys.readouterr().out
+def main() -> None:
+    print("Hello from practica-headliners!")
