@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QTextEdit,
 )
 from PySide6.QtCore import Qt
+from practica_headliners.gui.hilo_carga import HiloCarga
  
 from practica_headliners.importacion import importar_datos, ErrorImportacion
 from practica_headliners.gui.tabla_datos import TablaDatos
@@ -78,6 +79,12 @@ class VentanaPrincipal(QMainWindow):
         self.df_entrenamiento = None
         self.df_test = None
         self.modelo_actual = None
+
+        #hilos de carga 140
+        self.hilo_carga = None
+        self._ruta_cargando = None
+        self._texto_ruta_previo = ""
+        self._estado_botones = None
  
         # Tabla de datos con altura equilibrada
         self.tabla = TablaDatos()
@@ -256,32 +263,63 @@ class VentanaPrincipal(QMainWindow):
         ruta_archivo, _ = QFileDialog.getOpenFileName(
             self, "Selecciona el dataset", "", filtros
         )
- 
         if not ruta_archivo:
             return
- 
-        ruta_absoluta = str(Path(ruta_archivo).resolve())
-        self.lbl_ruta.setText(f"Archivo: {ruta_absoluta}")
- 
-        try:
-            df = importar_datos(ruta_absoluta)
-            self.tabla.mostrar(df)
-            self.datos = df
- 
-            self.actualizar_selectores(df.columns.tolist())
-            self.btn_confirmar.setEnabled(True)
- 
-            self.btn_separar.setEnabled(False)
-            self.limpiar_estado_flujo()
- 
-        except ErrorImportacion as e:
-            QMessageBox.critical(self, "Error de importación", str(e))
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error inesperado",
-                f"Ocurrió un error inesperado:\n{str(e)}",
-            )
+        self.iniciar_carga(str(Path(ruta_archivo).resolve()))
+
+    def _botones_flujo(self):
+        return [
+            self.btn_cargar,
+            self.btn_confirmar,
+            self.btn_separar,
+            self.btn_crear_modelo,
+            self.btn_guardar,
+        ]
+
+    def iniciar_carga(self, ruta):
+        """Lanza la importación en un hilo y bloquea botones incompatibles."""
+        if self.hilo_carga is not None:
+            return
+        self._ruta_cargando = ruta
+        self._texto_ruta_previo = self.lbl_ruta.text()
+        self.lbl_ruta.setText(f"Cargando... {ruta}")
+
+        # Guardamos qué botones estaban activos para restaurarlos si falla
+        self._estado_botones = {b: b.isEnabled() for b in self._botones_flujo()}
+        for boton in self._botones_flujo():
+            boton.setEnabled(False)
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+
+        self.hilo_carga = HiloCarga(ruta)
+        self.hilo_carga.cargado.connect(self.on_carga_terminada)
+        self.hilo_carga.fallido.connect(self.on_carga_fallida)
+        self.hilo_carga.finished.connect(self.on_hilo_finalizado)
+        self.hilo_carga.start()
+
+    def on_carga_terminada(self, df):
+        self.lbl_ruta.setText(f"Archivo: {self._ruta_cargando}")
+        self.tabla.mostrar(df)
+        self.datos = df
+        self.actualizar_selectores(df.columns.tolist())
+        self.limpiar_estado_flujo()
+        self._estado_botones = None  # carga correcta: no se restaura nada
+        self.btn_confirmar.setEnabled(True)
+        self.btn_separar.setEnabled(False)
+
+    def on_carga_fallida(self, mensaje):
+        self.lbl_ruta.setText(self._texto_ruta_previo)
+        QMessageBox.critical(self, "Error de importación", mensaje)
+
+    def on_hilo_finalizado(self):
+        """Se ejecuta siempre al terminar el hilo, con éxito o con error."""
+        QApplication.restoreOverrideCursor()
+        if self._estado_botones:
+            for boton, activo in self._estado_botones.items():
+                boton.setEnabled(activo)
+        self._estado_botones = None
+        self.btn_cargar.setEnabled(True)
+        self.hilo_carga.wait()  # evita destruir el hilo antes de que acabe
+        self.hilo_carga = None
  
     def actualizar_selectores(self, columnas):
         self.lista_features.clear()
@@ -436,6 +474,19 @@ class VentanaPrincipal(QMainWindow):
         if self.modelo_actual is not None:
             texto = self.txt_descripcion.toPlainText()
             self.modelo_actual.actualizar_descripcion(texto)
+
+
+    def closeEvent(self, evento):
+        if self.hilo_carga is not None and self.hilo_carga.isRunning():
+            QMessageBox.information(
+                self,
+                "Carga en curso",
+                "Espera a que termine la carga del archivo para cerrar "
+                "la aplicación.",
+            )
+            evento.ignore()
+        else:
+            evento.accept()
 
     def guardar_modelo_en_disco(self):
         """Pide la ruta y guarda el modelo con avisos y control de errores."""
