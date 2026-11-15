@@ -73,7 +73,8 @@ def predecir(modelo, datos):
     faltan = [c for c in modelo.entradas if c not in datos.columns]
     if faltan:
         raise ErrorModelo(
-            f"Faltan columnas de entrada: {', '.join(map(str, faltan))}.")
+            f"Faltan columnas de entrada: {', '.join(map(str, faltan))}."
+        )
     if datos[modelo.entradas].isna().any().any():
         raise ErrorModelo("Hay valores inexistentes en las entradas.")
     return modelo.estimador.predict(datos[modelo.entradas])
@@ -85,8 +86,10 @@ def calcular_metricas(modelo, datos):
     real = datos[modelo.salida]
     predicho = modelo.estimador.predict(datos[modelo.entradas])
     r2 = r2_score(real, predicho) if len(datos) >= 2 else float("nan")
-    return {"r2": float(r2),
-            "ecm": float(mean_squared_error(real, predicho))}
+    return {
+        "r2": float(r2),
+        "ecm": float(mean_squared_error(real, predicho)),
+    }
 
 
 def evaluar_modelo(modelo, entrenamiento, test):
@@ -103,7 +106,8 @@ def generar_formula(modelo, decimales=DECIMALES):
     """Genera el texto de la fórmula del modelo."""
     texto = f"{modelo.salida} = "
     for i, (coef, nombre) in enumerate(
-            zip(modelo.coeficientes, modelo.entradas)):
+        zip(modelo.coeficientes, modelo.entradas)
+    ):
         negativo = round(coef, decimales) < 0
         termino = f"{abs(coef):.{decimales}f} * {nombre}"
         if i == 0:
@@ -150,7 +154,8 @@ def guardar_modelo(modelo, ruta, metricas=None):
         "metadata": {
             "descripcion": (
                 str(modelo.descripcion)
-                if modelo.descripcion is not None else ""
+                if modelo.descripcion is not None
+                else ""
             ),
             "entradas": list(modelo.entradas),
             "salida": str(modelo.salida),
@@ -172,7 +177,8 @@ def guardar_modelo(modelo, ruta, metricas=None):
         joblib.dump(contenido, ruta_destino)
     except Exception as error:
         raise ErrorModelo(
-            f"No se pudo guardar el modelo en '{ruta_destino}': {error}"
+            f"No se pudo guardar el modelo en '{ruta_destino.name}'. "
+            "Comprueba que tienes permisos de escritura y espacio disponible."
         ) from error
 
     return ruta_destino.resolve()
@@ -184,21 +190,28 @@ def realizar_prediccion(modelo, valores_entrada):
     Recibe un objeto ModeloLineal (o estimador) y un diccionario o lista con los valores numéricos.
     """
     if isinstance(valores_entrada, dict):
-        x_valores = list(valores_entrada.values())
+        if hasattr(modelo, "entradas"):
+            x_valores = [valores_entrada[col] for col in modelo.entradas]
+        else:
+            x_valores = list(valores_entrada.values())
     else:
         x_valores = list(valores_entrada)
-    
+
     estimador = modelo.estimador if hasattr(modelo, "estimador") else modelo
-    
+
     if not hasattr(estimador, "coef_") or not hasattr(estimador, "intercept_"):
-        raise ValueError("El modelo proporcionado no es válido o no está entrenado.")
-    
+        raise ValueError(
+            "El modelo proporcionado no es válido o no está entrenado."
+        )
+
     coeficientes = np.array(estimador.coef_)
     x_array = np.array(x_valores)
-    
+
     if len(coeficientes) != len(x_array):
-        raise ValueError("El número de variables de entrada no coincide con el modelo.")
-    
+        raise ValueError(
+            "El número de variables de entrada no coincide con el modelo."
+        )
+
     prediccion = np.dot(coeficientes, x_array) + estimador.intercept_
-    
+
     return float(prediccion)

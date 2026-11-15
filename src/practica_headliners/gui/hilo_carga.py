@@ -1,6 +1,6 @@
 from PySide6.QtCore import QThread, Signal
 
-from practica_headliners.importacion import importar_datos, ErrorImportacion
+from practica_headliners.importacion import ErrorImportacion, importar_datos
 
 
 class HiloCarga(QThread):
@@ -22,7 +22,11 @@ class HiloCarga(QThread):
             datos = importar_datos(self.ruta)
         except ErrorImportacion as error:
             self.fallido.emit(str(error))
-        except Exception as error:
-            self.fallido.emit(f"Ocurrió un error inesperado:\n{error}")
+        except Exception:
+            self.fallido.emit(
+                "No se pudo leer el archivo seleccionado. "
+                "Comprueba que el archivo no esté dañado ni abierto en otro "
+                "programa y que tenga un formato válido (.csv, .xlsx, .xls, .sqlite o .db)."
+            )
         else:
             self.cargado.emit(datos)
