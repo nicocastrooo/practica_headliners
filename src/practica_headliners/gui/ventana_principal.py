@@ -41,6 +41,7 @@ from practica_headliners.modelo import (
     generar_formula,
     guardar_modelo,
     realizar_prediccion,
+    cargar_modelo, # NUEVO: Importación para la tarea #136
 )
 
 
@@ -103,17 +104,22 @@ class VentanaPrincipal(QMainWindow):
         self.layout_principal.addWidget(self.lbl_indicacion_inicial)
 
         # --- PASO 1: CARGAR DATOS ---
-        self.grupo_carga = QGroupBox("1. Cargar datos")
+        self.grupo_carga = QGroupBox("1. Cargar datos / Cargar modelo")
         layout_carga = QVBoxLayout()
 
         layout_superior = QHBoxLayout()
         self.btn_cargar = QPushButton("1. Cargar dataset")
         self.btn_cargar.clicked.connect(self.abrir_explorador_archivos)
 
+        # NUEVO (#136): Botón para cargar modelo guardado
+        self.btn_cargar_modelo = QPushButton("Cargar modelo")
+        self.btn_cargar_modelo.clicked.connect(self.ejecutar_carga_modelo)
+
         self.lbl_ruta = QLabel("Ningún archivo seleccionado")
         self.lbl_ruta.setWordWrap(True)
 
         layout_superior.addWidget(self.btn_cargar)
+        layout_superior.addWidget(self.btn_cargar_modelo) # Añadido a la interfaz
         layout_superior.addWidget(self.lbl_ruta, stretch=1)
         layout_carga.addLayout(layout_superior)
 
@@ -299,6 +305,88 @@ class VentanaPrincipal(QMainWindow):
         self.limpiar_metricas()
         self.actualizar_barra_estado()
 
+    # --- NUEVAS FUNCIONES PARA TAREA #136 ---
+    def comprobar_cambios_sin_guardar(self) -> bool:
+        """Avisa al usuario si hay cambios sin guardar. Retorna False si cancela."""
+        if self.cambios_sin_guardar:
+            respuesta = QMessageBox.warning(
+                self,
+                "Cambios sin guardar",
+                "El modelo actual tiene cambios sin guardar. Si continúas, se perderán.\n¿Deseas continuar?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            if respuesta == QMessageBox.StandardButton.No:
+                return False
+        return True
+
+    def alternar_modo_interfaz(self, modo_modelo: bool):
+        """Oculta o muestra los paneles dependientes de los datos crudos."""
+        self.tabla.setVisible(not modo_modelo)
+        self.grupo_selectores.setVisible(not modo_modelo)
+        self.grupo_separacion.setVisible(not modo_modelo)
+        self.panel_preprocesado.setVisible(not modo_modelo)
+        self.btn_crear_modelo.setVisible(not modo_modelo)
+        if hasattr(self, 'grafico'):
+            self.grafico.setVisible(not modo_modelo)
+
+    def ejecutar_carga_modelo(self):
+        """Abre el diálogo, carga un modelo guardado y adapta la GUI."""
+        if not self.comprobar_cambios_sin_guardar():
+            return
+
+        filtros = f"Archivos de modelo (*{EXTENSION_MODELO})"
+        ruta_archivo, _ = QFileDialog.getOpenFileName(
+            self, "Cargar modelo guardado", "", filtros
+        )
+
+        if not ruta_archivo:
+            return
+
+        try:
+            modelo = cargar_modelo(ruta_archivo)
+            self.modelo_actual = modelo
+            self.nombre_archivo_actual = Path(ruta_archivo).name
+            self.lbl_ruta.setText(f"Modelo cargado: {self.nombre_archivo_actual}")
+            
+            # Limpiar datos previos y asegurar columnas correctas
+            self.datos = None
+            self.df_entrenamiento = None
+            self.df_test = None
+            self.features_seleccionadas = modelo.entradas
+            self.target_seleccionado = modelo.salida
+            
+            # Ocultar paneles innecesarios
+            self.alternar_modo_interfaz(modo_modelo=True)
+            
+            # Actualizar metadatos
+            self.lbl_formula.setText(generar_formula(modelo))
+            if modelo.metricas:
+                self.tabla_metricas.setItem(0, 0, QTableWidgetItem(f"{modelo.metricas.get('entrenamiento', {}).get('r2', float('nan')):.4f}"))
+                self.tabla_metricas.setItem(0, 1, QTableWidgetItem(f"{modelo.metricas.get('test', {}).get('r2', float('nan')):.4f}"))
+                self.tabla_metricas.setItem(1, 0, QTableWidgetItem(f"{modelo.metricas.get('entrenamiento', {}).get('ecm', float('nan')):.4f}"))
+                self.tabla_metricas.setItem(1, 1, QTableWidgetItem(f"{modelo.metricas.get('test', {}).get('ecm', float('nan')):.4f}"))
+            
+            self._actualizando_ui_descripcion = True
+            self.txt_descripcion.setEnabled(True)
+            self.txt_descripcion.setPlainText(modelo.descripcion or "")
+            self._actualizando_ui_descripcion = False
+
+            # Actualizar estados y habilitar paneles restantes
+            self.btn_guardar.setEnabled(True)
+            self.origen_modelo = "cargado"
+            self.cambios_sin_guardar = False
+            self.configurar_panel_prediccion()
+            self.actualizar_barra_estado()
+
+            QMessageBox.information(self, "Modelo Cargado", "El modelo se ha cargado correctamente.")
+
+        except ErrorModelo as e:
+            QMessageBox.critical(self, "Error al cargar", str(e))
+        except Exception as e:
+            QMessageBox.critical(self, "Error inesperado", f"Ocurrió un error al cargar el modelo:\n{str(e)}")
+    # ----------------------------------------
+
     def actualizar_barra_estado(self, cargando=False):
         """Actualiza la barra de estado inferior con el archivo, modelo y cambios."""
         if cargando:
@@ -477,6 +565,10 @@ class VentanaPrincipal(QMainWindow):
             self.btn_crear_modelo.setEnabled(False)
 
     def abrir_explorador_archivos(self):
+        # NUEVO (#136): Comprobar si hay cambios sin guardar antes de avanzar
+        if not self.comprobar_cambios_sin_guardar():
+            return
+            
         filtros = "Archivos compatibles (*.csv *.xlsx *.xls *.sqlite *.db)"
         ruta_archivo, _ = QFileDialog.getOpenFileName(
             self, "Selecciona el dataset", "", filtros
@@ -488,6 +580,7 @@ class VentanaPrincipal(QMainWindow):
     def _botones_flujo(self):
         botones = [
             self.btn_cargar,
+            self.btn_cargar_modelo, # NUEVO (#136): Añadido a control de bloqueo
             self.btn_confirmar,
             self.btn_separar,
             self.btn_crear_modelo,
@@ -523,6 +616,9 @@ class VentanaPrincipal(QMainWindow):
         self.hilo_carga.start()
 
     def on_carga_terminada(self, df):
+        # NUEVO (#136): Restaurar la interfaz por si venimos del modo modelo
+        self.alternar_modo_interfaz(modo_modelo=False)
+        
         self.lbl_ruta.setText(f"Archivo: {self._ruta_cargando}")
         self.nombre_archivo_actual = Path(self._ruta_cargando).name
         self.tabla.mostrar(df)
@@ -745,6 +841,11 @@ class VentanaPrincipal(QMainWindow):
                 self.actualizar_barra_estado()
 
     def closeEvent(self, evento):
+        # NUEVO (#136): Validar cambios sin guardar antes de salir
+        if not self.comprobar_cambios_sin_guardar():
+            evento.ignore()
+            return
+            
         if self.hilo_carga is not None and self.hilo_carga.isRunning():
             QMessageBox.information(
                 self,
@@ -773,8 +874,11 @@ class VentanaPrincipal(QMainWindow):
             if respuesta != QMessageBox.StandardButton.Yes:
                 return
 
+        # NUEVO (#136): Sugerir la ruta original si el modelo fue cargado
+        ruta_defecto = str(getattr(self.modelo_actual, 'ruta_archivo', '')) if self.origen_modelo == "cargado" else ""
+        
         ruta, _ = QFileDialog.getSaveFileName(
-            self, "Guardar modelo", "", f"Modelos (*{EXTENSION_MODELO})"
+            self, "Guardar modelo", ruta_defecto, f"Modelos (*{EXTENSION_MODELO})"
         )
         if not ruta:  # cerró el diálogo: no se hace nada
             return
