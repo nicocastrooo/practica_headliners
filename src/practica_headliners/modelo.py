@@ -27,13 +27,16 @@ class ModeloLineal:
     salida: str
     descripcion: str = ""
     metricas: Optional[dict] = None
+    cambios_sin_guardar: bool = False
+    ruta_archivo: Optional[Path] = None  # Para saber de dónde se cargó o dónde se guardó
 
     def actualizar_descripcion(self, nueva_descripcion: str):
         """Actualiza la descripción del modelo en memoria."""
         self.descripcion = (
             nueva_descripcion if nueva_descripcion is not None else ""
         )
-
+        self.cambios_sin_guardar = True  # Modificar la descripción cuenta como cambio
+        
     @property
     def coeficientes(self):
         return [float(c) for c in self.estimador.coef_]
@@ -65,7 +68,9 @@ def entrenar_modelo(entrenamiento, entradas, salida):
     _comprobar(entrenamiento, entradas, salida, "entrenamiento")
     estimador = LinearRegression()
     estimador.fit(entrenamiento[entradas], entrenamiento[salida])
-    return ModeloLineal(estimador, entradas, salida)
+    modelo = ModeloLineal(estimador, entradas, salida)
+    modelo.cambios_sin_guardar = True  # Un modelo recién creado no está guardado
+    return modelo
 
 
 def predecir(modelo, datos):
@@ -175,6 +180,8 @@ def guardar_modelo(modelo, ruta, metricas=None):
 
     try:
         joblib.dump(contenido, ruta_destino)
+        modelo.cambios_sin_guardar = False
+        modelo.ruta_archivo = ruta_destino.resolve()
     except Exception as error:
         raise ErrorModelo(
             f"No se pudo guardar el modelo en '{ruta_destino.name}'. "
@@ -215,3 +222,31 @@ def realizar_prediccion(modelo, valores_entrada):
     prediccion = np.dot(coeficientes, x_array) + estimador.intercept_
 
     return float(prediccion)
+def cargar_modelo(ruta) -> ModeloLineal:
+    """Carga un modelo guardado desde disco validando su formato."""
+    ruta_origen = Path(ruta)
+    if not ruta_origen.exists():
+        raise ErrorModelo(f"El archivo '{ruta_origen.name}' no existe.")
+
+    try:
+        contenido = joblib.load(ruta_origen)
+    except Exception as error:
+        raise ErrorModelo(f"El archivo '{ruta_origen.name}' está dañado o no es un modelo válido.") from error
+
+    if not isinstance(contenido, dict) or "modelo" not in contenido or "metadata" not in contenido:
+        raise ErrorModelo("El archivo no tiene la estructura de metadatos esperada.")
+
+    meta = contenido["metadata"]
+    try:
+        modelo = ModeloLineal(
+            estimador=contenido["modelo"],
+            entradas=meta["entradas"],
+            salida=meta["salida"],
+            descripcion=meta.get("descripcion", ""),
+            metricas=meta.get("metricas")
+        )
+        modelo.cambios_sin_guardar = False 
+        modelo.ruta_archivo = ruta_origen.resolve()
+        return modelo
+    except KeyError as e:
+        raise ErrorModelo(f"Faltan datos obligatorios en el archivo del modelo: {e}")
