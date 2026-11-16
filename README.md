@@ -21,9 +21,35 @@ La aplicación te guía por el flujo completo de regresión lineal:
 
 ---
 
+## Antes de empezar: cómo abrir la terminal
+
+Todos los comandos de esta guía se escriben en una **terminal**: una ventana de texto donde se teclean órdenes para el ordenador. No hace falta saber nada más, solo abrirla y pegar los comandos.
+
+**Cómo abrirla en Windows**
+1. Abre el **Explorador de archivos** y entra en la carpeta donde quieras guardar el proyecto, por ejemplo el **Escritorio**.
+2. Haz **clic derecho** en un espacio vacío de la carpeta (no sobre un archivo).
+3. Elige **Abrir en Terminal** (en algunas versiones pone "Abrir ventana de PowerShell aquí").
+
+Otra forma: pulsa la **tecla Windows**, escribe `PowerShell` y pulsa **Enter**. Se abre en tu carpeta personal, que también sirve.
+
+**Cómo abrirla en macOS**
+Pulsa **Cmd + Espacio**, escribe `Terminal` y pulsa **Enter**.
+
+**Cómo abrirla en Linux**
+Pulsa **Ctrl + Alt + T**, o busca "Terminal" en el menú de aplicaciones.
+
+**Cómo usarla**
+* Verás una línea de texto que termina en `>` (Windows) o `$` (macOS y Linux). Ahí se escribe.
+* **Copia un comando de esta guía, pégalo en la terminal** (clic derecho o `Ctrl + V`) y pulsa **Enter**.
+* Ejecuta los comandos **de uno en uno**, en el orden de la guía, y espera a que termine cada uno antes de pegar el siguiente.
+* Si un comando da un error en rojo, copia el mensaje completo para poder consultarlo.
+* Usa **siempre la misma terminal** durante los pasos 1 a 3, salvo que la guía indique cerrarla y abrir otra.
+
+---
+
 ## Requisitos
 
-* **Git**, para clonar el repositorio (o descarga el código como ZIP desde GitHub y descomprímelo).
+* **Git**, para descargar el proyecto. Si no lo tienes, instálalo desde <https://git-scm.com/downloads>.
 * **uv**, gestor de paquetes de Python. Si no lo tienes, instálalo así:
 
   Windows (PowerShell):
@@ -36,7 +62,7 @@ La aplicación te guía por el flujo completo de regresión lineal:
   curl -LsSf https://astral.sh/uv/install.sh | sh
   ```
 
-  Después de instalarlo, **cierra y vuelve a abrir la terminal**. Más información: <https://docs.astral.sh/uv/>.
+  Después de instalarlo, **cierra la terminal y abre una nueva** para que reconozca el comando `uv`. Más información: <https://docs.astral.sh/uv/>.
 
 * **Python 3.12 o superior.** No hace falta instalarlo a mano: `uv` lo descarga automáticamente si no lo encuentra.
 
@@ -44,12 +70,16 @@ La aplicación te guía por el flujo completo de regresión lineal:
 
 ## Instalación y arranque
 
-### 1. Clonar el repositorio
+### 1. Descargar el proyecto
+
+Abre una terminal (ver el apartado anterior) en la carpeta donde quieras guardar el proyecto, por ejemplo el Escritorio, y ejecuta:
 
 ```bash
-git clone https://github.com/nicocastrooo/practica_headliners.git
+git clone -b dev https://github.com/nicocastrooo/practica_headliners.git
 cd practica_headliners
 ```
+
+El segundo comando entra en la carpeta del proyecto. Si todo ha ido bien, la línea de la terminal terminará en `practica_headliners`. **Todos los comandos siguientes se ejecutan desde esa carpeta.**
 
 ### 2. Instalar las dependencias
 
