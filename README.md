@@ -119,6 +119,12 @@ Para probar el flujo completo se recomienda un dataset con varias columnas numé
 8. Para predecir, introduce un número en cada campo de entrada y pulsa **Realizar predicción**.
 
 ---
+## Limitaciones conocidas
+
+Tras la validación End-to-End (HU #29) de la aplicación, se recogen las siguientes consideraciones y limitaciones:
+* La aplicación está limitada exclusivamente a modelos de **regresión lineal** (simple o múltiple).
+* Las variables de entrada (*features*) y salida (*target*) seleccionadas para el entrenamiento deben ser obligatoriamente de tipo numérico.
+* No se han detectado fallos críticos ni incidencias funcionales imprevistas durante el flujo estándar de uso.
 
 ## Documentación
 
