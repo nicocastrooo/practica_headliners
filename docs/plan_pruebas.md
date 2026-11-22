@@ -320,11 +320,11 @@ Los archivos pequeños para probar errores (vacíos o corruptos) tampoco están 
 | CP-10 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Rechaza constante `abc` y avisa si eliminar filas deja vacío train/test permitiendo reelegir | Correcto | — |
 | CP-11 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Fórmula, métricas (`R²` y `ECM`) y gráfico simple con recta de ajuste coinciden exactamente | Correcto | — |
 | CP-12 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Limpia modelo previo fórmula con signo `-`, métricas, gráfico múltiple y barra inferior correctos | Correcto | — |
-| CP-13 | Persistencia y GUI (#145) | | | | | |
-| CP-14 | Persistencia y GUI (#145) | | | | | |
+| CP-13 | Persistencia y GUI (#145) | Nicolás Castro Fontela | 22/11/2026 | Aviso "Descripción vacía" correcto; cancelar el diálogo no guarda archivo ni genera errores | Correcto | — |
+| CP-14 | Persistencia y GUI (#145) | Nicolás Castro Fontela | 22/11/2026 | Guarda añadiendo .joblib en ruta con espacios y ñ, actualiza estado y pide confirmación al sobrescribir | Correcto | — |
 | CP-15 | Persistencia y GUI (#145) | Samuel Piñeiro Paz | 21/11/2026 | Carga el modelo (fórmula, métricas y descripción de CP-12), oculta paneles de datos, métricas no editables, re-guarda con sobrescritura y estado correcto | Correcto | — |
 | CP-16 | Persistencia y GUI (#145) | Samuel Piñeiro Paz | 21/11/2026 | Muestra "Error al cargar" con el modelo corrupto sin perder el actual; "No" conserva el modelo y "Yes" carga `housing.csv` con todos los paneles | Correcto | — |
 | CP-17 | Persistencia y GUI (#145) | Samuel Piñeiro Paz | 21/11/2026 | Avisos "Valores faltantes" y "Valor no válido" correctos; con `5.0` y `5,0` da `median_house_value = 258138.8768` | Correcto | — |
 | CP-18 | Persistencia y GUI (#145) | Samuel Piñeiro Paz | 21/11/2026 | Al crear el modelo con solo `median_income` el panel 6 deja solo ese campo vacío y el resultado vuelve a `median_house_value = -` | Correcto | — |
 | CP-19 | Persistencia y GUI (#145) | Samuel Piñeiro Paz | 21/11/2026 | Tabla de 20.640 filas fluida hasta `ocean_proximity`, sin cortes en 900x600 ni 1366x728, y avisa "Cambios sin guardar" al cerrar | Correcto | — |
-| CP-20 | Flujo Completo E2E | | | | | |
+| CP-20 | Flujo Completo E2E | Daniel García de la Barrera | 22/11/2026 | Flujo completo con housing.db correcto; el modelo cargado mantiene fórmula, métricas, descripción y predicción idéntica (258138.8768) | Correcto | — |
