@@ -308,18 +308,18 @@ Los archivos pequeños para probar errores (vacíos o corruptos) tampoco están 
 
 | ID | Bloque | Ejecutor | Fecha | Resultado obtenido | Estado (`Correcto` / `Fallido`) | Ticket Taiga (si falla) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| CP-01 | Datos y Modelo (#144) | | | | | |
-| CP-02 | Datos y Modelo (#144) | | | | | |
-| CP-03 | Datos y Modelo (#144) | | | | | |
-| CP-04 | Datos y Modelo (#144) | | | | | |
-| CP-05 | Datos y Modelo (#144) | | | | | |
-| CP-06 | Datos y Modelo (#144) | | | | | |
-| CP-07 | Datos y Modelo (#144) | | | | | |
-| CP-08 | Datos y Modelo (#144) | | | | | |
-| CP-09 | Datos y Modelo (#144) | | | | | |
-| CP-10 | Datos y Modelo (#144) | | | | | |
-| CP-11 | Datos y Modelo (#144) | | | | | |
-| CP-12 | Datos y Modelo (#144) | | | | | |
+| CP-01 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Estado inicial, cancelación sin error y carga de `housing.csv` (20.640 filas, 10 columnas) correctos | Correcto | — |
+| CP-02 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Carga fluida sin congelación, sustituye tabla por `housing.xlsx` (20.640 filas, 10 columnas) | Correcto | — |
+| CP-03 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Importación automática de SQLite desde ruta con espacios, tilde y `ñ` correcta (20.640 filas, 10 columnas) | Correcto | — |
+| CP-04 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Muestra "Error de importación" sin trazas y mantiene los datos previos de `housing.csv` | Correcto | — |
+| CP-05 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Muestra "Selección Confirmada" con entradas y salida elegidas y activa el paso 3 | Correcto | — |
+| CP-06 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Muestra "Error de Validación" en los 3 casos inválidos y mantiene bloqueado el paso 3 | Correcto | — |
+| CP-07 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Límites 1%, 99% y 20% con semilla 42 devuelven conteos exactos y reproducibles; activa paso 5 | Correcto | — |
+| CP-08 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Muestra "Error de Separación" en 0%, 100%, semilla 3.5 y 3 filas; paso 5 sigue deshabilitado | Correcto | — |
+| CP-09 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Detecta 163/44 nulos y aplica eliminación, media, mediana y constante (500) sin alterar el CSV | Correcto | — |
+| CP-10 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Rechaza constante `abc` y avisa si eliminar filas deja vacío train/test permitiendo reelegir | Correcto | — |
+| CP-11 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Fórmula, métricas (`R²` y `ECM`) y gráfico simple con recta de ajuste coinciden exactamente | Correcto | — |
+| CP-12 | Datos y Modelo (#144) | Diego Grande Goyanes | 21/11/2026 | Limpia modelo previo fórmula con signo `-`, métricas, gráfico múltiple y barra inferior correctos | Correcto | — |
 | CP-13 | Persistencia y GUI (#145) | | | | | |
 | CP-14 | Persistencia y GUI (#145) | | | | | |
 | CP-15 | Persistencia y GUI (#145) | | | | | |
