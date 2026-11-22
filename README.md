@@ -1,85 +1,71 @@
-# Práctica Headliners - GIA IS
+# Práctica Headliners - Ingeniería del Software (GIA - UDC)
 
-Repositorio oficial del proyecto de desarrollo de software para la asignatura de Ingeniería del Software (GIA - UDC).
+Aplicación de escritorio hecha en Python para crear, evaluar, guardar y usar modelos de regresión lineal a partir de un dataset, todo desde interfaz gráfica.
 
-> **Estado de la versión:** `v0.2.0`
-> Aplicación de escritorio para crear, evaluar, guardar y usar modelos de regresión lineal a partir de un dataset, mediante una interfaz gráfica.
+Versión actual: `v0.2.0`
 
----
+## Qué permite hacer
 
-## Qué hace la aplicación
+La aplicación sigue el flujo habitual para trabajar con regresión lineal:
 
-La aplicación te guía por el flujo completo de regresión lineal:
-
-1. **Cargar datos:** archivos CSV, Excel (`.xlsx`, `.xls`) y bases de datos SQLite (`.sqlite`, `.db`).
-2. **Seleccionar columnas:** variables numéricas de entrada y una variable de salida.
-3. **Separar datos:** división aleatoria en entrenamiento y test, indicando el porcentaje de test y una semilla.
-4. **Preprocesar:** detección de valores inexistentes (NaN) y cuatro estrategias de tratamiento (eliminar filas, media, mediana o valor constante).
-5. **Crear modelo:** regresión lineal simple o múltiple, con su fórmula, las métricas (R² y error cuadrático medio) en entrenamiento y test, y un gráfico del ajuste.
-6. **Guardar y cargar modelos:** un modelo se guarda en un archivo `.joblib` junto con su descripción y se puede volver a cargar más tarde.
-7. **Realizar predicciones:** con un modelo creado o cargado, introduce un valor para cada variable de entrada y obtén la predicción.
-
----
+1. Cargar datos desde archivos CSV, Excel (`.xlsx`, `.xls`) o bases de datos SQLite (`.sqlite`, `.db`).
+2. Elegir las columnas numéricas de entrada y la columna de salida.
+3. Separar los datos en entrenamiento y test indicando el porcentaje de test y una semilla.
+4. Detectar valores vacíos (NaN) y tratarlos eliminando filas o rellenando con la media, la mediana o un valor constante.
+5. Entrenar un modelo de regresión lineal simple o múltiple, mostrando la fórmula, las métricas (R² y ECM) en entrenamiento y test y el gráfico del ajuste.
+6. Guardar el modelo en disco en formato `.joblib` (con una descripción opcional) y volver a cargarlo más adelante.
+7. Hacer predicciones nuevas introduciendo valores para cada variable de entrada.
 
 ## Antes de empezar: cómo abrir la terminal
 
-Todos los comandos de esta guía se escriben en una **terminal**: una ventana de texto donde se teclean órdenes para el ordenador. No hace falta saber nada más, solo abrirla y pegar los comandos.
+Los comandos de instalación se ejecutan en la terminal (la consola de comandos del sistema).
 
-**Cómo abrirla en Windows**
-1. Abre el **Explorador de archivos** y entra en la carpeta donde quieras guardar el proyecto, por ejemplo el **Escritorio**.
-2. Haz **clic derecho** en un espacio vacío de la carpeta (no sobre un archivo).
-3. Elige **Abrir en Terminal** (en algunas versiones pone "Abrir ventana de PowerShell aquí").
+En Windows:
+1. Abre el Explorador de archivos y entra en la carpeta donde quieras dejar el proyecto (por ejemplo, el Escritorio).
+2. Haz clic derecho en un hueco vacío de la carpeta y elige **Abrir en Terminal** (en versiones anteriores de Windows sale como "Abrir ventana de PowerShell aquí").
+3. También puedes pulsar la tecla Windows, escribir `PowerShell` y darle a Enter; se abrirá en tu carpeta de usuario.
 
-Otra forma: pulsa la **tecla Windows**, escribe `PowerShell` y pulsa **Enter**. Se abre en tu carpeta personal, que también sirve.
+En macOS: pulsa `Cmd + Espacio`, escribe `Terminal` y dale a Enter.
 
-**Cómo abrirla en macOS**
-Pulsa **Cmd + Espacio**, escribe `Terminal` y pulsa **Enter**.
+En Linux: pulsa `Ctrl + Alt + T` o busca "Terminal" en el menú de aplicaciones.
 
-**Cómo abrirla en Linux**
-Pulsa **Ctrl + Alt + T**, o busca "Terminal" en el menú de aplicaciones.
-
-**Cómo usarla**
-* Verás una línea de texto que termina en `>` (Windows) o `$` (macOS y Linux). Ahí se escribe.
-* **Copia un comando de esta guía, pégalo en la terminal** (clic derecho o `Ctrl + V`) y pulsa **Enter**.
-* Ejecuta los comandos **de uno en uno**, en el orden de la guía, y espera a que termine cada uno antes de pegar el siguiente.
-* Si un comando da un error en rojo, copia el mensaje completo para poder consultarlo.
-* Usa **siempre la misma terminal** durante los pasos 1 a 3, salvo que la guía indique cerrarla y abrir otra.
-
----
+Un par de cosas a tener en cuenta al usarla:
+- Se escribe a partir de la línea que acaba en `>` (Windows) o `$` (macOS/Linux).
+- Copia cada comando de esta guía, pégalo en la terminal (`Ctrl + V` o clic derecho) y pulsa Enter.
+- Ejecútalos de uno en uno, esperando a que termine el anterior antes de pegar el siguiente.
+- Mantén abierta la misma terminal durante los pasos 1 a 3, salvo cuando se indique reiniciarla. Si sale algún error en rojo, copia el texto completo para revisarlo.
 
 ## Requisitos
 
-* **Git**, para descargar el proyecto. Si no lo tienes, instálalo desde <https://git-scm.com/downloads>.
-* **uv**, gestor de paquetes de Python. Si no lo tienes, instálalo así:
+- **Git**, para clonar el repositorio. Se descarga desde [https://git-scm.com/downloads](https://git-scm.com/downloads).
+- **uv**, para gestionar el entorno virtual y las dependencias de Python. Si no lo tienes instalado:
 
-  Windows (PowerShell):
+  En Windows (PowerShell):
   ```powershell
   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
   ```
 
-  macOS y Linux:
+  En macOS y Linux:
   ```bash
   curl -LsSf https://astral.sh/uv/install.sh | sh
   ```
 
-  Después de instalarlo, **cierra la terminal y abre una nueva** para que reconozca el comando `uv`. Más información: <https://docs.astral.sh/uv/>.
+  Al terminar de instalarlo, cierra la terminal y abre una nueva para que reconozca el comando `uv` (más info en [https://docs.astral.sh/uv/](https://docs.astral.sh/uv/)).
 
-* **Python 3.12 o superior.** No hace falta instalarlo a mano: `uv` lo descarga automáticamente si no lo encuentra.
-
----
+- **Python 3.12 o superior.** No hace falta instalarlo aparte porque `uv` lo descarga solo si no lo encuentra en el equipo.
 
 ## Instalación y arranque
 
 ### 1. Descargar el proyecto
 
-Abre una terminal (ver el apartado anterior) en la carpeta donde quieras guardar el proyecto, por ejemplo el Escritorio, y ejecuta:
+Abre una terminal en la carpeta donde quieras guardar el código (por ejemplo, el Escritorio) y ejecuta:
 
 ```bash
 git clone -b dev https://github.com/nicocastrooo/practica_headliners.git
 cd practica_headliners
 ```
 
-El segundo comando entra en la carpeta del proyecto. Si todo ha ido bien, la línea de la terminal terminará en `practica_headliners`. **Todos los comandos siguientes se ejecutan desde esa carpeta.**
+El segundo comando entra dentro de la carpeta del proyecto. A partir de aquí, la línea de la terminal debería terminar en `practica_headliners` y todos los comandos siguientes se lanzan desde ahí.
 
 ### 2. Instalar las dependencias
 
@@ -87,64 +73,56 @@ El segundo comando entra en la carpeta del proyecto. Si todo ha ido bien, la lí
 uv sync
 ```
 
-Crea el entorno virtual e instala todo lo necesario. La primera vez puede tardar un par de minutos.
+Esto crea el entorno virtual e instala las librerías necesarias. La primera vez puede tardar un par de minutos.
 
-### 3. Ejecutar la aplicación
+### 3. Arrancar la aplicación
 
 ```bash
 uv run python -m practica_headliners.gui.ventana_principal
 ```
 
-Se abrirá la ventana de la aplicación.
+Con esto se abrirá la ventana principal.
 
----
+## Datasets de ejemplo y formato
 
-## Datasets de ejemplo
+Los datasets no están subidos al repositorio. Si tienes uno de prueba (como `housing.csv`), puedes guardarlo en cualquier carpeta de tu ordenador y abrirlo desde el explorador de la aplicación.
 
-Los datasets **no se incluyen en el repositorio**. Si el equipo te ha entregado uno (por ejemplo `housing.csv`), guárdalo en cualquier carpeta de tu ordenador: la aplicación te deja elegir el archivo desde un explorador.
-
-Para probar el flujo completo se recomienda un dataset con varias columnas numéricas. Las columnas de texto no se pueden usar como variables del modelo.
-
----
+Para que funcione correctamente, el archivo debe cumplir lo siguiente:
+- Estar en formato CSV (`.csv`), Excel (`.xlsx`, `.xls`) o SQLite (`.sqlite`, `.db`).
+- En CSV y Excel, la primera fila tiene que llevar los nombres de las columnas.
+- En SQLite, la base de datos debe tener una sola tabla.
+- Las columnas que elijas como entrada y salida tienen que ser numéricas (las de texto no sirven para regresión lineal). Si hay celdas vacías, se pueden limpiar desde el paso 4 de la propia app.
 
 ## Guía rápida de uso
 
-1. Pulsa **Cargar dataset** y elige el archivo. Mientras carga verás "Cargando..." y los botones quedan bloqueados.
-2. Marca las columnas de **entrada** y elige la columna de **salida**. Confirma la selección.
+1. Pulsa **Cargar dataset** y selecciona el archivo. Mientras se lee aparecerá "Cargando..." y los botones se bloquean para evitar errores.
+2. Marca las columnas de entrada, elige la columna de salida y confirma la selección.
 3. Indica el porcentaje de test y la semilla, y pulsa **Separar datos**.
-4. Si aparecen valores inexistentes, elige una estrategia y aplícala. No se puede crear el modelo hasta resolverlos.
-5. Pulsa **Crear modelo**. Verás la fórmula, las métricas y el gráfico.
-6. Escribe una **descripción** del modelo (opcional, pero recomendable) y pulsa **Guardar modelo**. Elige dónde guardarlo; el archivo tendrá extensión `.joblib`.
-7. Para recuperar un modelo guardado, pulsa **Cargar modelo** y elige el archivo.
-8. Para predecir, introduce un número en cada campo de entrada y pulsa **Realizar predicción**.
+4. Si hay valores nulos, elige una estrategia de preprocesado y aplícala (no deja crear el modelo mientras queden nulos).
+5. Pulsa **Crear modelo** para ver la fórmula, las métricas y el gráfico.
+6. Si quieres, añade una descripción y pulsa **Guardar modelo** para guardarlo como archivo `.joblib`.
+7. Para abrir un modelo que ya guardaste antes, usa **Cargar modelo**.
+8. Para hacer una predicción, rellena los campos numéricos de entrada y pulsa **Realizar predicción**.
 
----
 ## Limitaciones conocidas
 
-Tras la validación End-to-End (HU #29) de la aplicación, se recogen las siguientes consideraciones y limitaciones:
-* La aplicación está limitada exclusivamente a modelos de **regresión lineal** (simple o múltiple).
-* Las variables de entrada (*features*) y salida (*target*) seleccionadas para el entrenamiento deben ser obligatoriamente de tipo numérico.
-* No se han detectado fallos críticos ni incidencias funcionales imprevistas durante el flujo estándar de uso.
+- Solo soporta modelos de regresión lineal (simple o múltiple).
+- Todas las variables seleccionadas para entrenar el modelo (tanto entradas como salida) deben ser numéricas.
 
 ## Documentación
 
-La carpeta `docs/` contiene la documentación técnica del proyecto, entre otros:
+En la carpeta `docs/` está el resto de documentación del proyecto, por ejemplo:
+- `docs/prueba_concepto.md`: prueba de concepto de regresión lineal.
+- `docs/optimizacion_tabla.md`: técnica de paginación para tablas grandes.
 
-* `docs/prueba_concepto.md`: prueba de concepto de la regresión lineal.
-* `docs/optimizacion_tabla.md`: técnica usada para mostrar tablas grandes.
+## Pruebas automatizadas
 
----
-
-## Ejecutar las pruebas (para desarrolladores)
+Para lanzar los tests del proyecto:
 
 ```bash
 uv run pytest
 ```
 
----
+## Aviso de seguridad al cargar modelos
 
-## Advertencia de seguridad sobre modelos externos
-
-La aplicación utiliza el formato de serialización `.joblib` para guardar y cargar modelos. Debido al diseño interno de este formato en Python, **cargar archivos `.joblib` de fuentes no confiables o desconocidas puede permitir la ejecución de código malicioso en tu ordenador**.
-
-Solo debes cargar modelos generados por ti mismo o descargados de fuentes absolutamente fiables y conocidas.
+Los modelos se guardan y cargan con `joblib` (`.joblib`). Como este formato serializa objetos de Python, abrir un archivo `.joblib` de origen desconocido puede ejecutar código no deseado en tu equipo. Carga únicamente modelos que hayas generado tú o que vengan de alguien de confianza.
