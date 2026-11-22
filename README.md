@@ -2,68 +2,143 @@
 
 Repositorio oficial del proyecto de desarrollo de software para la asignatura de Ingeniería del Software (GIA - UDC).
 
-> **Estado de la versión:** `v0.1.0` (Pre-release)  
-> Aplicación en fase de desarrollo enfocada en la carga, exploración y preprocesamiento de datos para machine learning mediante una interfaz gráfica (GUI).
+> **Estado de la versión:** `v0.2.0`
+> Aplicación de escritorio para crear, evaluar, guardar y usar modelos de regresión lineal a partir de un dataset, mediante una interfaz gráfica.
 
 ---
 
-## Funcionalidades Incluidas (v0.1.0)
+## Qué hace la aplicación
 
-Esta primera versión del proyecto incluye el flujo completo de preparación de datos:
-* **Importación y lectura de datasets:** Soporte para cargar archivos de datos de ejemplo desde la carpeta local `data/` directamente en la interfaz gráfica.
-* **Selección de columnas:** Capacidad para seleccionar las columnas de interés con las que se va a trabajar en el modelo.
-* **Separeración Train/Test:** División interactiva del dataset en conjuntos de entrenamiento y prueba.
-* **Detección y preprocesamiento de nulos:** 
-  * Detección automática y visualización del número de valores inexistentes (NaN) por columna (desglosado en train y test).
-  * Aplicación de 4 estrategias de tratamiento: *Eliminar filas*, *Media*, *Mediana* y *Valor constante*.
-  * Validación de errores en tiempo real y bloqueo condicional de la creación de modelos hasta limpiar los nulos.
+La aplicación te guía por el flujo completo de regresión lineal:
 
----
-
-## Requisitos del Sistema
-
-* **Python** `>=3.12`
-* **uv** (Gestor de paquetes moderno para Python) instalado en el sistema.
+1. **Cargar datos:** archivos CSV, Excel (`.xlsx`, `.xls`) y bases de datos SQLite (`.sqlite`, `.db`).
+2. **Seleccionar columnas:** variables numéricas de entrada y una variable de salida.
+3. **Separar datos:** división aleatoria en entrenamiento y test, indicando el porcentaje de test y una semilla.
+4. **Preprocesar:** detección de valores inexistentes (NaN) y cuatro estrategias de tratamiento (eliminar filas, media, mediana o valor constante).
+5. **Crear modelo:** regresión lineal simple o múltiple, con su fórmula, las métricas (R² y error cuadrático medio) en entrenamiento y test, y un gráfico del ajuste.
+6. **Guardar y cargar modelos:** un modelo se guarda en un archivo `.joblib` junto con su descripción y se puede volver a cargar más tarde.
+7. **Realizar predicciones:** con un modelo creado o cargado, introduce un valor para cada variable de entrada y obtén la predicción.
 
 ---
 
-## Guía de Instalación y Despliegue
+## Antes de empezar: cómo abrir la terminal
 
-Para clonar y poner en entorno de desarrollo local, sigue estos pasos:
+Todos los comandos de esta guía se escriben en una **terminal**: una ventana de texto donde se teclean órdenes para el ordenador. No hace falta saber nada más, solo abrirla y pegar los comandos.
 
-### 1. Clonar el repositorio
-Abre tu terminal y ejecuta:
+**Cómo abrirla en Windows**
+1. Abre el **Explorador de archivos** y entra en la carpeta donde quieras guardar el proyecto, por ejemplo el **Escritorio**.
+2. Haz **clic derecho** en un espacio vacío de la carpeta (no sobre un archivo).
+3. Elige **Abrir en Terminal** (en algunas versiones pone "Abrir ventana de PowerShell aquí").
+
+Otra forma: pulsa la **tecla Windows**, escribe `PowerShell` y pulsa **Enter**. Se abre en tu carpeta personal, que también sirve.
+
+**Cómo abrirla en macOS**
+Pulsa **Cmd + Espacio**, escribe `Terminal` y pulsa **Enter**.
+
+**Cómo abrirla en Linux**
+Pulsa **Ctrl + Alt + T**, o busca "Terminal" en el menú de aplicaciones.
+
+**Cómo usarla**
+* Verás una línea de texto que termina en `>` (Windows) o `$` (macOS y Linux). Ahí se escribe.
+* **Copia un comando de esta guía, pégalo en la terminal** (clic derecho o `Ctrl + V`) y pulsa **Enter**.
+* Ejecuta los comandos **de uno en uno**, en el orden de la guía, y espera a que termine cada uno antes de pegar el siguiente.
+* Si un comando da un error en rojo, copia el mensaje completo para poder consultarlo.
+* Usa **siempre la misma terminal** durante los pasos 1 a 3, salvo que la guía indique cerrarla y abrir otra.
+
+---
+
+## Requisitos
+
+* **Git**, para descargar el proyecto. Si no lo tienes, instálalo desde <https://git-scm.com/downloads>.
+* **uv**, gestor de paquetes de Python. Si no lo tienes, instálalo así:
+
+  Windows (PowerShell):
+  ```powershell
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+  ```
+
+  macOS y Linux:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
+
+  Después de instalarlo, **cierra la terminal y abre una nueva** para que reconozca el comando `uv`. Más información: <https://docs.astral.sh/uv/>.
+
+* **Python 3.12 o superior.** No hace falta instalarlo a mano: `uv` lo descarga automáticamente si no lo encuentra.
+
+---
+
+## Instalación y arranque
+
+### 1. Descargar el proyecto
+
+Abre una terminal (ver el apartado anterior) en la carpeta donde quieras guardar el proyecto, por ejemplo el Escritorio, y ejecuta:
+
 ```bash
-git clone [https://github.com/nicocastrooo/practica_headliners.git](https://github.com/nicocastrooo/practica_headliners.git)
+git clone -b dev https://github.com/nicocastrooo/practica_headliners.git
 cd practica_headliners
-2. Sincronizar el entorno e instalar dependencias con uv
-Gracias al gestor uv, puedes instalar automáticamente el entorno virtual y todas las dependencias del proyecto ejecutando:
+```
 
-Bash
+El segundo comando entra en la carpeta del proyecto. Si todo ha ido bien, la línea de la terminal terminará en `practica_headliners`. **Todos los comandos siguientes se ejecutan desde esa carpeta.**
+
+### 2. Instalar las dependencias
+
+```bash
 uv sync
-3. Ejecutar la aplicación
-Una vez instalado el entorno, arranca la interfaz gráfica de la aplicación con:
+```
 
-Bash
-uv run python main.py
-(Nota: Asegúrate de comprobar el archivo de configuración si el punto de entrada principal tuviera otra ruta).
+Crea el entorno virtual e instala todo lo necesario. La primera vez puede tardar un par de minutos.
 
-Datasets de Ejemplo
-La aplicación incluye soporte para pruebas utilizando los datasets almacenados en la carpeta local data/. Puedes utilizarlos para validar el flujo completo de carga, selección, partición y preprocesado.
+### 3. Ejecutar la aplicación
 
-## Funcionalidades Incluidas (v0.2.0)
+```bash
+uv run python -m practica_headliners.gui.ventana_principal
+```
 
-En esta versión, la aplicación permite realizar el flujo completo de regresión lineal:
-- **Importación y lectura de datasets:** Soporte para cargar archivos CSV, Excel (.xlsx, .xls) y bases de datos SQLite desde la carpeta local `data/`.
-- **Selección de variables:** Selección de variables numéricas de entrada (features) y variable de salida (target).
-- **Separación Train/Test:** División aleatoria e interactiva del dataset en conjuntos de entrenamiento y prueba mediante porcentaje y semilla.
-- **Preprocesado de nulos:** Detección de valores inexistentes (NaN) y aplicación de 4 estrategias (Eliminar filas, Media, Mediana, Valor constante) evitando el *data leakage*.
-- **Creación y Evaluación del Modelo:** Entrenamiento de modelos de regresión lineal (simple y múltiple) calculando el Error Cuadrático Medio (ECM) y el Coeficiente de Determinación (R²) para entrenamiento y test.
-- **Visualización:** Representación gráfica del ajuste del modelo (nubes de puntos y recta de ajuste) y generación automática de la fórmula matemática.
+Se abrirá la ventana de la aplicación.
 
-```markdown
-## Advertencia de Seguridad sobre Modelos Externos
+---
 
-La aplicación utiliza el formato de serialización `.joblib` para guardar y cargar modelos. Debido al diseño interno de este formato en Python, **cargar archivos `.joblib` de fuentes no confiables o desconocidas puede permitir la ejecución de código malicioso en tu ordenador**. 
+## Datasets de ejemplo
+
+Los datasets **no se incluyen en el repositorio**. Si el equipo te ha entregado uno (por ejemplo `housing.csv`), guárdalo en cualquier carpeta de tu ordenador: la aplicación te deja elegir el archivo desde un explorador.
+
+Para probar el flujo completo se recomienda un dataset con varias columnas numéricas. Las columnas de texto no se pueden usar como variables del modelo.
+
+---
+
+## Guía rápida de uso
+
+1. Pulsa **Cargar dataset** y elige el archivo. Mientras carga verás "Cargando..." y los botones quedan bloqueados.
+2. Marca las columnas de **entrada** y elige la columna de **salida**. Confirma la selección.
+3. Indica el porcentaje de test y la semilla, y pulsa **Separar datos**.
+4. Si aparecen valores inexistentes, elige una estrategia y aplícala. No se puede crear el modelo hasta resolverlos.
+5. Pulsa **Crear modelo**. Verás la fórmula, las métricas y el gráfico.
+6. Escribe una **descripción** del modelo (opcional, pero recomendable) y pulsa **Guardar modelo**. Elige dónde guardarlo; el archivo tendrá extensión `.joblib`.
+7. Para recuperar un modelo guardado, pulsa **Cargar modelo** y elige el archivo.
+8. Para predecir, introduce un número en cada campo de entrada y pulsa **Realizar predicción**.
+
+---
+
+## Documentación
+
+La carpeta `docs/` contiene la documentación técnica del proyecto, entre otros:
+
+* `docs/prueba_concepto.md`: prueba de concepto de la regresión lineal.
+* `docs/optimizacion_tabla.md`: técnica usada para mostrar tablas grandes.
+
+---
+
+## Ejecutar las pruebas (para desarrolladores)
+
+```bash
+uv run pytest
+```
+
+---
+
+## Advertencia de seguridad sobre modelos externos
+
+La aplicación utiliza el formato de serialización `.joblib` para guardar y cargar modelos. Debido al diseño interno de este formato en Python, **cargar archivos `.joblib` de fuentes no confiables o desconocidas puede permitir la ejecución de código malicioso en tu ordenador**.
 
 Solo debes cargar modelos generados por ti mismo o descargados de fuentes absolutamente fiables y conocidas.

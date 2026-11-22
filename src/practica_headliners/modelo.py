@@ -27,13 +27,16 @@ class ModeloLineal:
     salida: str
     descripcion: str = ""
     metricas: Optional[dict] = None
+    cambios_sin_guardar: bool = False
+    ruta_archivo: Optional[Path] = None  # Para saber de dónde se cargó o dónde se guardó
 
     def actualizar_descripcion(self, nueva_descripcion: str):
         """Actualiza la descripción del modelo en memoria."""
         self.descripcion = (
             nueva_descripcion if nueva_descripcion is not None else ""
         )
-
+        self.cambios_sin_guardar = True  # Modificar la descripción cuenta como cambio
+        
     @property
     def coeficientes(self):
         return [float(c) for c in self.estimador.coef_]
@@ -65,7 +68,9 @@ def entrenar_modelo(entrenamiento, entradas, salida):
     _comprobar(entrenamiento, entradas, salida, "entrenamiento")
     estimador = LinearRegression()
     estimador.fit(entrenamiento[entradas], entrenamiento[salida])
-    return ModeloLineal(estimador, entradas, salida)
+    modelo = ModeloLineal(estimador, entradas, salida)
+    modelo.cambios_sin_guardar = True  # Un modelo recién creado no está guardado
+    return modelo
 
 
 def predecir(modelo, datos):
@@ -73,7 +78,8 @@ def predecir(modelo, datos):
     faltan = [c for c in modelo.entradas if c not in datos.columns]
     if faltan:
         raise ErrorModelo(
-            f"Faltan columnas de entrada: {', '.join(map(str, faltan))}.")
+            f"Faltan columnas de entrada: {', '.join(map(str, faltan))}."
+        )
     if datos[modelo.entradas].isna().any().any():
         raise ErrorModelo("Hay valores inexistentes en las entradas.")
     return modelo.estimador.predict(datos[modelo.entradas])
@@ -85,8 +91,10 @@ def calcular_metricas(modelo, datos):
     real = datos[modelo.salida]
     predicho = modelo.estimador.predict(datos[modelo.entradas])
     r2 = r2_score(real, predicho) if len(datos) >= 2 else float("nan")
-    return {"r2": float(r2),
-            "ecm": float(mean_squared_error(real, predicho))}
+    return {
+        "r2": float(r2),
+        "ecm": float(mean_squared_error(real, predicho)),
+    }
 
 
 def evaluar_modelo(modelo, entrenamiento, test):
@@ -103,7 +111,8 @@ def generar_formula(modelo, decimales=DECIMALES):
     """Genera el texto de la fórmula del modelo."""
     texto = f"{modelo.salida} = "
     for i, (coef, nombre) in enumerate(
-            zip(modelo.coeficientes, modelo.entradas)):
+        zip(modelo.coeficientes, modelo.entradas)
+    ):
         negativo = round(coef, decimales) < 0
         termino = f"{abs(coef):.{decimales}f} * {nombre}"
         if i == 0:
@@ -150,7 +159,8 @@ def guardar_modelo(modelo, ruta, metricas=None):
         "metadata": {
             "descripcion": (
                 str(modelo.descripcion)
-                if modelo.descripcion is not None else ""
+                if modelo.descripcion is not None
+                else ""
             ),
             "entradas": list(modelo.entradas),
             "salida": str(modelo.salida),
@@ -170,9 +180,12 @@ def guardar_modelo(modelo, ruta, metricas=None):
 
     try:
         joblib.dump(contenido, ruta_destino)
+        modelo.cambios_sin_guardar = False
+        modelo.ruta_archivo = ruta_destino.resolve()
     except Exception as error:
         raise ErrorModelo(
-            f"No se pudo guardar el modelo en '{ruta_destino}': {error}"
+            f"No se pudo guardar el modelo en '{ruta_destino.name}'. "
+            "Comprueba que tienes permisos de escritura y espacio disponible."
         ) from error
 
     return ruta_destino.resolve()
@@ -184,21 +197,56 @@ def realizar_prediccion(modelo, valores_entrada):
     Recibe un objeto ModeloLineal (o estimador) y un diccionario o lista con los valores numéricos.
     """
     if isinstance(valores_entrada, dict):
-        x_valores = list(valores_entrada.values())
+        if hasattr(modelo, "entradas"):
+            x_valores = [valores_entrada[col] for col in modelo.entradas]
+        else:
+            x_valores = list(valores_entrada.values())
     else:
         x_valores = list(valores_entrada)
-    
+
     estimador = modelo.estimador if hasattr(modelo, "estimador") else modelo
-    
+
     if not hasattr(estimador, "coef_") or not hasattr(estimador, "intercept_"):
-        raise ValueError("El modelo proporcionado no es válido o no está entrenado.")
-    
+        raise ValueError(
+            "El modelo proporcionado no es válido o no está entrenado."
+        )
+
     coeficientes = np.array(estimador.coef_)
     x_array = np.array(x_valores)
-    
+
     if len(coeficientes) != len(x_array):
-        raise ValueError("El número de variables de entrada no coincide con el modelo.")
-    
+        raise ValueError(
+            "El número de variables de entrada no coincide con el modelo."
+        )
+
     prediccion = np.dot(coeficientes, x_array) + estimador.intercept_
-    
+
     return float(prediccion)
+def cargar_modelo(ruta) -> ModeloLineal:
+    """Carga un modelo guardado desde disco validando su formato."""
+    ruta_origen = Path(ruta)
+    if not ruta_origen.exists():
+        raise ErrorModelo(f"El archivo '{ruta_origen.name}' no existe.")
+
+    try:
+        contenido = joblib.load(ruta_origen)
+    except Exception as error:
+        raise ErrorModelo(f"El archivo '{ruta_origen.name}' está dañado o no es un modelo válido.") from error
+
+    if not isinstance(contenido, dict) or "modelo" not in contenido or "metadata" not in contenido:
+        raise ErrorModelo("El archivo no tiene la estructura de metadatos esperada.")
+
+    meta = contenido["metadata"]
+    try:
+        modelo = ModeloLineal(
+            estimador=contenido["modelo"],
+            entradas=meta["entradas"],
+            salida=meta["salida"],
+            descripcion=meta.get("descripcion", ""),
+            metricas=meta.get("metricas")
+        )
+        modelo.cambios_sin_guardar = False 
+        modelo.ruta_archivo = ruta_origen.resolve()
+        return modelo
+    except KeyError as e:
+        raise ErrorModelo(f"Faltan datos obligatorios en el archivo del modelo: {e}")

@@ -11,6 +11,8 @@ from practica_headliners.modelo import (
     evaluar_modelo,
     generar_formula,
     realizar_prediccion,
+    cargar_modelo,      
+    guardar_modelo,     
 )
 
 
@@ -22,7 +24,7 @@ def _crear_datos_sinteticos():
     })
 
 
-# --- TAREA #130: Pruebas unitarias de la estructura de descripción ---
+# Pruebas unitarias de la estructura de descripción - 130
 
 def test_modelo_nuevo_tiene_descripcion_estrictamente_vacia():
     """Comprueba que al inicializar un modelo nuevo la descripción está vacía."""
@@ -68,7 +70,7 @@ def test_nuevo_modelo_reinicia_descripcion_vacia():
     assert modelo_2.descripcion == ""
 
 
-# --- Pruebas unitarias de entrenamiento, métricas y fórmula (#119) ---
+# Pruebas unitarias de entrenamiento, métricas y fórmula - 119 
 
 def test_entrenar_modelo_devuelve_objeto_valido():
     """Verifica que el entrenamiento devuelve un ModeloLineal válido."""
@@ -128,8 +130,44 @@ def test_entrenar_modelo_con_nulos_lanza_error():
     with pytest.raises(ErrorModelo):
         entrenar_modelo(datos, ["x1"], "y")
 
+# Carga del modelo y gestión de estado - 135
 
-# --- TAREA #137: Pruebas unitarias de predicción matemática ---
+def test_cargar_modelo_y_estado_guardado(tmp_path):
+    """Prueba el ciclo de vida completo de guardado, carga y control de estado (#135)."""
+    datos = pd.DataFrame({
+        "x1": [1.0, 2.0, 3.0, 4.0],
+        "x2": [2.0, 1.0, 4.0, 3.0],
+        "y": [8.0, 9.0, 16.0, 17.0]
+    })
+    modelo_nuevo = entrenar_modelo(datos, ["x1", "x2"], "y")
+    
+    assert modelo_nuevo.cambios_sin_guardar is True
+    
+    ruta_archivo = tmp_path / "modelo_prueba.joblib"
+    guardar_modelo(modelo_nuevo, ruta_archivo, metricas={"entrenamiento": {"r2": 1, "ecm": 0}, "test": {"r2": 1, "ecm": 0}})
+    
+    assert modelo_nuevo.cambios_sin_guardar is False
+    assert modelo_nuevo.ruta_archivo == ruta_archivo.resolve()
+    
+    modelo_cargado = cargar_modelo(ruta_archivo)
+    
+    assert modelo_cargado.cambios_sin_guardar is False
+    assert modelo_cargado.ruta_archivo == ruta_archivo.resolve()
+    
+    modelo_cargado.actualizar_descripcion("Nueva descripción de prueba")
+    assert modelo_cargado.cambios_sin_guardar is True
+    assert modelo_cargado.descripcion == "Nueva descripción de prueba"
+    
+    guardar_modelo(modelo_cargado, ruta_archivo, metricas={"entrenamiento": {"r2": 1, "ecm": 0}, "test": {"r2": 1, "ecm": 0}})
+    assert modelo_cargado.cambios_sin_guardar is False
+
+def test_cargar_modelo_archivo_invalido():
+    """Comprueba que intentar cargar un archivo inexistente lanza ErrorModelo."""
+    with pytest.raises(ErrorModelo):
+        cargar_modelo("ruta_inventada_que_no_existe.joblib")
+
+
+# Pruebas unitarias de predicción matemática - 137
 
 def test_realizar_prediccion_matematica():
     """Comprueba que la predicción coincide con el cálculo manual a partir de la fórmula del modelo."""
