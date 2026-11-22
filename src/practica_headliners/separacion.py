@@ -5,8 +5,7 @@ class ErrorSeparacion(Exception):
     pass
 
 def separar_datos(df: pd.DataFrame, porcentaje_test: float = 20.0, semilla: int = 42):
-    """
-    Divide un DataFrame en conjuntos de entrenamiento y test.
+    """Divide un DataFrame en conjuntos de entrenamiento y test.
 
     Args:
         df: DataFrame original.
@@ -15,6 +14,11 @@ def separar_datos(df: pd.DataFrame, porcentaje_test: float = 20.0, semilla: int 
 
     Returns:
         Tupla con (df_entrenamiento, df_test).
+
+    Raises:
+        ErrorSeparacion: Si el dataset tiene menos de 5 filas, el porcentaje
+            no está entre 1 y 99, la semilla no es entera o algún conjunto
+            quedaría vacío.
     """
     # 1. Validación de filas mínimas
     if len(df) < 5:

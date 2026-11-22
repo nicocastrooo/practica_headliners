@@ -31,7 +31,11 @@ class ModeloLineal:
     ruta_archivo: Optional[Path] = None  # Para saber de dónde se cargó o dónde se guardó
 
     def actualizar_descripcion(self, nueva_descripcion: str):
-        """Actualiza la descripción del modelo en memoria."""
+        """Actualiza la descripción del modelo en memoria y marca cambios pendientes.
+
+        Args:
+            nueva_descripcion: Nuevo texto de descripción (si es None se guarda vacío).
+        """
         self.descripcion = (
             nueva_descripcion if nueva_descripcion is not None else ""
         )
@@ -63,7 +67,20 @@ def _comprobar(datos, entradas, salida, conjunto):
 
 
 def entrenar_modelo(entrenamiento, entradas, salida):
-    """Ajusta un modelo de regresión lineal con el conjunto de entrenamiento."""
+    """Ajusta un modelo de regresión lineal con el conjunto de entrenamiento.
+
+    Args:
+        entrenamiento: DataFrame con los datos de entrenamiento.
+        entradas: Lista con los nombres de las columnas de entrada (features).
+        salida: Nombre de la columna de salida (target).
+
+    Returns:
+        Objeto ModeloLineal entrenado y marcado con cambios sin guardar.
+
+    Raises:
+        ErrorModelo: Si la selección no es válida, el conjunto está vacío
+            o contiene valores inexistentes (NaN).
+    """
     entradas = list(entradas)
     _comprobar(entrenamiento, entradas, salida, "entrenamiento")
     estimador = LinearRegression()
@@ -74,7 +91,18 @@ def entrenar_modelo(entrenamiento, entradas, salida):
 
 
 def predecir(modelo, datos):
-    """Devuelve las predicciones del modelo para las filas de `datos`."""
+    """Devuelve las predicciones del modelo para las filas de un DataFrame.
+
+    Args:
+        modelo: Objeto ModeloLineal entrenado.
+        datos: DataFrame que contiene las columnas de entrada del modelo.
+
+    Returns:
+        Array de NumPy con los valores predichos.
+
+    Raises:
+        ErrorModelo: Si faltan columnas de entrada o hay valores inexistentes.
+    """
     faltan = [c for c in modelo.entradas if c not in datos.columns]
     if faltan:
         raise ErrorModelo(
@@ -86,7 +114,18 @@ def predecir(modelo, datos):
 
 
 def calcular_metricas(modelo, datos):
-    """Calcula R² y ECM del modelo sobre un conjunto de datos."""
+    """Calcula R² y ECM del modelo sobre un conjunto de datos.
+
+    Args:
+        modelo: Objeto ModeloLineal entrenado.
+        datos: DataFrame con las columnas de entrada y salida.
+
+    Returns:
+        Diccionario con las claves 'r2' y 'ecm' (float).
+
+    Raises:
+        ErrorModelo: Si los datos no son válidos, están vacíos o tienen NaN.
+    """
     _comprobar(datos, modelo.entradas, modelo.salida, "datos")
     real = datos[modelo.salida]
     predicho = modelo.estimador.predict(datos[modelo.entradas])
@@ -98,7 +137,19 @@ def calcular_metricas(modelo, datos):
 
 
 def evaluar_modelo(modelo, entrenamiento, test):
-    """Calcula las métricas en entrenamiento y en test y las asocia al modelo."""
+    """Calcula las métricas en entrenamiento y en test y las asocia al modelo.
+
+    Args:
+        modelo: Objeto ModeloLineal entrenado.
+        entrenamiento: DataFrame de entrenamiento.
+        test: DataFrame de test.
+
+    Returns:
+        Diccionario con las claves 'entrenamiento' y 'test', cada una con 'r2' y 'ecm'.
+
+    Raises:
+        ErrorModelo: Si alguno de los conjuntos no es válido o contiene NaN.
+    """
     resultado = {
         "entrenamiento": calcular_metricas(modelo, entrenamiento),
         "test": calcular_metricas(modelo, test),
@@ -108,7 +159,15 @@ def evaluar_modelo(modelo, entrenamiento, test):
 
 
 def generar_formula(modelo, decimales=DECIMALES):
-    """Genera el texto de la fórmula del modelo."""
+    """Genera el texto legible de la fórmula matemática del modelo.
+
+    Args:
+        modelo: Objeto ModeloLineal entrenado.
+        decimales: Número de decimales para redondear coeficientes e intercepto.
+
+    Returns:
+        Cadena de texto con la fórmula usando los nombres de las columnas.
+    """
     texto = f"{modelo.salida} = "
     for i, (coef, nombre) in enumerate(
         zip(modelo.coeficientes, modelo.entradas)
@@ -125,7 +184,20 @@ def generar_formula(modelo, decimales=DECIMALES):
 
 
 def guardar_modelo(modelo, ruta, metricas=None):
-    """Guarda el modelo y sus metadatos en disco usando joblib."""
+    """Guarda el modelo y sus metadatos en disco usando joblib.
+
+    Args:
+        modelo: Objeto ModeloLineal entrenado.
+        ruta: Ruta de destino (str o Path). Si no termina en .joblib, se añade.
+        metricas: Diccionario opcional de métricas (si no se pasa, usa modelo.metricas).
+
+    Returns:
+        Path absoluto del archivo guardado.
+
+    Raises:
+        ErrorModelo: Si el modelo no es válido, la ruta está vacía, faltan
+            métricas o falla la escritura en disco.
+    """
     if not isinstance(modelo, ModeloLineal) or modelo.estimador is None:
         raise ErrorModelo("No hay un modelo válido para guardar.")
 
@@ -192,9 +264,18 @@ def guardar_modelo(modelo, ruta, metricas=None):
 
 
 def realizar_prediccion(modelo, valores_entrada):
-    """
-    Calcula el valor predicho (Y) a partir de un modelo entrenado y los valores de entrada (X).
-    Recibe un objeto ModeloLineal (o estimador) y un diccionario o lista con los valores numéricos.
+    """Calcula el valor predicho (Y) para una única observación nueva.
+
+    Args:
+        modelo: Objeto ModeloLineal o estimador entrenado.
+        valores_entrada: Diccionario {columna: valor} o lista con los valores numéricos.
+
+    Returns:
+        Valor numérico predicho (float).
+
+    Raises:
+        ValueError: Si el modelo no está entrenado o el número de variables
+            de entrada no coincide con el modelo.
     """
     if isinstance(valores_entrada, dict):
         if hasattr(modelo, "entradas"):
@@ -222,8 +303,20 @@ def realizar_prediccion(modelo, valores_entrada):
     prediccion = np.dot(coeficientes, x_array) + estimador.intercept_
 
     return float(prediccion)
+
 def cargar_modelo(ruta) -> ModeloLineal:
-    """Carga un modelo guardado desde disco validando su formato."""
+    """Carga un modelo guardado desde disco validando su estructura.
+
+    Args:
+        ruta: Ruta (str o Path) del archivo .joblib a cargar.
+
+    Returns:
+        Objeto ModeloLineal reconstruido con sus metadatos y métricas.
+
+    Raises:
+        ErrorModelo: Si el archivo no existe, está dañado, no tiene el formato
+            esperado o le faltan campos obligatorios.
+    """
     ruta_origen = Path(ruta)
     if not ruta_origen.exists():
         raise ErrorModelo(f"El archivo '{ruta_origen.name}' no existe.")
