@@ -25,6 +25,6 @@ Con PySide6 tenemos todos los widgets listos de serie, podemos agrupar cada paso
 
 ## 3. Problemas en el prototipo y cómo los resolvimos
 
-Al hacer la prueba de concepto en la carpeta `prototipos/` nos topamos con tres cosas que tuvimos que ajustar antes de pasar a programar la app real:
+Al hacer la prueba de concepto en la carpeta `prototipos/` nos topamos con una cosa que tuvimos que ajustar antes de pasar a programar la app real:
 
 - **Sincronización de dependencias:** Al meter `PySide6` junto con `pandas` y `matplotlib`, tuvimos que actualizar el `uv.lock` y hacer `uv sync` en los ordenadores de todos para evitar conflictos de versiones con Python 3.12.
