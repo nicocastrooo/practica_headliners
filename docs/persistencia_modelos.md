@@ -1,6 +1,6 @@
 # Investigación sobre la Persistencia de Modelos
 
-Como parte de la historia de usuario #20, se ha investigado cómo persistir modelos de regresión lineal y sus metadatos (fórmula, columnas, métricas y descripción). 
+Como parte de la historia de usuario #20, se ha investigado cómo persistir modelos de regresión lineal y sus metadatos (fórmula, columnas, métricas y descripción).
 
 ## 1. Comparativa de Métodos de Persistencia
 
@@ -19,7 +19,7 @@ Se han evaluado dos métodos de persistencia con diferentes enfoques: `joblib` (
 Tras consultar la [documentación oficial de Python sobre pickle](https://docs.python.org/3/library/pickle.html) y la [guía de persistencia de scikit-learn](https://scikit-learn.org/stable/model_persistence.html), se determina que `joblib` y `pickle` son inherentemente inseguros con archivos de origen desconocido.
 
 **¿Por qué ocurre esto?**
-El protocolo de `pickle` (usado internamente por `joblib`) no es un simple formato de almacenamiento de datos; es una máquina virtual de pila (*stack-based virtual machine*). Al utilizar la función `load()`, el sistema no se limita a inicializar objetos pasivamente, sino que ejecuta secuencias de instrucciones (opcodes) incrustadas en el archivo para reconstruir el estado. 
+El protocolo de `pickle` (usado internamente por `joblib`) no es un simple formato de almacenamiento de datos; es una máquina virtual de pila (*stack-based virtual machine*). Al utilizar la función `load()`, el sistema no se limita a inicializar objetos pasivamente, sino que ejecuta secuencias de instrucciones (opcodes) incrustadas en el archivo para reconstruir el estado.
 
 Un archivo manipulado maliciosamente puede incluir un opcode que instruya a `pickle` a utilizar el módulo `os` o `subprocess` del sistema para ejecutar comandos de consola silenciosamente, obteniendo control remoto o borrando datos en la máquina que abre el modelo.
 
@@ -51,3 +51,4 @@ Para encapsular los metadatos y el modelo, guardaremos un único objeto `dict` e
         }
     }
 }
+```
