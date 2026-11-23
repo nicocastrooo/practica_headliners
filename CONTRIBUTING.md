@@ -1,144 +1,132 @@
-# Guía de Contribución (`CONTRIBUTING.md`)
+# Guía de contribución (CONTRIBUTING.md)
 
-Este documento recoge las normas de uso del repositorio, estilo de código, pruebas, integración continua y publicación que sigue el equipo.
+Aquí dejamos anotadas las normas con las que trabajamos en el repositorio: cómo organizamos las ramas, el estilo de código, el uso de `uv`, las pruebas y los pasos para sacar una release.
 
----
+## 1. Uso del repositorio y datos locales
 
-## 1. Uso del Repositorio y Prohibición de Subir Datos
+- **No se suben datos ni modelos al repositorio:** Nunca hay que añadir a Git datasets (`.csv`, `.xlsx`, `.xls`, `.db`, `.sqlite`) ni modelos guardados (`.joblib`, `.pkl`).
+- **Carpeta local `data/`:** Todos los archivos de prueba y modelos que generemos en local se guardan en la carpeta `data/` en la raíz del proyecto. Esa carpeta está en el `.gitignore` para que no se cuele nada por error.
+- **Comprobación antes del commit:** Antes de hacer `git add` o `git commit`, conviene echar un ojo a `git status` para asegurarse de que no se está subiendo ningún archivo de datos ni temporal.
 
-- **Prohibido subir archivos de datos o modelos al repositorio:** Nunca se deben añadir a Git datasets (`.csv`, `.xlsx`, `.xls`, `.db`, `.sqlite`) ni modelos entrenados guardados (`.joblib`, `.pkl`).
-- **Uso de la carpeta local `data/`:** Todos los datasets de prueba y modelos generados localmente deben guardarse dentro de la carpeta `data/` en la raíz del proyecto. Esta carpeta está excluida en `.gitignore` para evitar que se suban datos por error.
-- **Revisión previa al commit:** Antes de ejecutar `git add` o `git commit`, revisa siempre `git status` para confirmar que no se ha incluido ningún archivo de datos ni temporal.
+## 2. Modelo de ramas
 
----
+Trabajamos con dos ramas fijas y ramas cortas para cada tarea:
 
-## 2. Modelo de Ramas
+- `main`: Solo contiene código estable de versiones publicadas (releases). Está protegida en GitHub y no se pueden hacer commits ni pushes directos.
+- `dev`: Rama de integración donde vamos juntando las tareas terminadas antes de cada release. Tampoco se hacen commits directos aquí.
+- **Ramas de trabajo:** Cada tarea de Taiga se hace en su propia rama, creada siempre desde `dev` actualizada (`git pull origin dev`):
+  - Funcionalidades nuevas: `feature/<num-tarea>-<descripcion-corta>` (por ejemplo, `feature/121-gui-modelo`)
+  - Corrección de errores: `fix/<num-tarea>-<descripcion-corta>` (por ejemplo, `fix/110-casos-limite-preprocesado`)
+  - Documentación: `docs/<num-tarea>-<descripcion-corta>` (por ejemplo, `docs/148-contributing-inventario`)
 
-El repositorio cuenta con dos ramas permanentes y ramas de trabajo de vida corta:
+Una vez fusionada una rama en `dev`, **no la borramos** de GitHub para mantener visible el historial de trabajo de cada tarea.
 
-- **`main`:** Contiene únicamente código estable correspondiente a versiones publicadas (*releases*). **Está prohibido hacer commits directos en `main`.**
-- **`dev`:** Rama de integración donde se reúne el trabajo completado antes de cada *release*. **Está prohibido hacer commits directos en `dev`.**
-- **Ramas de trabajo:** Cada tarea se desarrolla en una rama creada siempre desde `dev` actualizada (`git pull origin dev`), siguiendo esta nomenclatura:
-  - Nuevas funcionalidades: `feature/<num-tarea>-<descripcion-corta>` (ej. `feature/121-gui-modelo`)
-  - Corrección de errores: `fix/<num-tarea>-<descripcion-corta>` (ej. `fix/110-casos-limite-preprocesado`)
-  - Documentación: `docs/<num-tarea>-<descripcion-corta>` (ej. `docs/148-contributing-inventario`)
-- **Conservación de ramas:** Una vez fusionadas en `dev`, **las ramas de trabajo no se eliminan** del repositorio en GitHub para conservar la trazabilidad del historial del proyecto.
+## 3. Estilo de código (PEP 8)
 
----
-
-## 3. Estilo de Código (PEP 8)
-
-- Todo el código Python en `src/` y `tests/` sigue la guía **PEP 8**, con un límite máximo de **79 caracteres por línea**.
-- **Nomenclatura:** `snake_case` para variables, funciones y módulos; `CamelCase` para clases; `MAYUSCULAS_CON_GUIONES` para constantes.
-- **Docstrings y comentarios:** Las funciones públicas de los módulos de lógica deben incluir un *docstring* indicando qué hacen, sus parámetros, qué devuelven y qué excepciones pueden lanzar. Los comentarios en línea se usan solo para explicar decisiones no evidentes.
-- **Formateo automático con `autopep8`:** La configuración del formateador está definida en `[tool.autopep8]` dentro de `pyproject.toml` (`max_line_length = 79`, `in-place = true`, `recursive = true`, `aggressive = 1`). Antes de hacer commit, formatea los archivos modificados con:
+- Todo el código Python en `src/` y `tests/` sigue PEP 8 con un máximo de **79 caracteres por línea**.
+- Nombres: `snake_case` para variables, funciones y módulos; `CamelCase` para clases; `MAYUSCULAS_CON_GUIONES` para constantes.
+- Docstrings y comentarios: Las funciones públicas de los módulos de lógica llevan docstring explicando qué hacen, qué parámetros reciben, qué devuelven y qué errores pueden lanzar. Los comentarios sueltos los dejamos solo para aclarar cosas que no sean obvias.
+- **Formateo con `autopep8`:** Tenemos la configuración en `[tool.autopep8]` dentro de `pyproject.toml` (`max_line_length = 79`, `in-place = true`, `recursive = true`, `aggressive = 1`). Antes de hacer commit, pasamos el formateador a lo que hayamos tocado:
 
 ```bash
 uv run autopep8 src/ tests/
 ```
 
-O sobre un archivo concreto:
+O solo sobre un archivo concreto:
 
 ```bash
 uv run autopep8 src/practica_headliners/ruta_al_archivo.py
 ```
 
----
+## 4. Mensajes de commit
 
-## 4. Formato de los Mensajes de Commit
-
-Los mensajes de commit siguen **Conventional Commits** e incluyen el número de tarea de Taiga:
+Seguimos el formato de Conventional Commits añadiendo el número de tarea de Taiga:
 
 ```text
 <tipo>: #<num-tarea> <descripción breve en minúsculas>
 ```
 
-Tipos utilizados en el proyecto:
-- `feat:` Nueva funcionalidad (ej. `feat: #138 añade seccion de prediccion en la gui`)
-- `fix:` Corrección de errores (ej. `fix: #110 rechaza valores no finitos en constante`)
-- `docs:` Cambios en la documentación (ej. `docs: #148 actualiza contributing e inventario en docs`)
-- `refactor:` Mejora interna del código sin alterar su comportamiento (ej. `refactor: #118 simplifica validacion del modelo`)
-- `test:` Creación o actualización de pruebas automatizadas (ej. `test: #104 añade pruebas unitarias de validacion de columnas`)
+Los tipos que usamos son:
+- `feat`: funcionalidad nueva (ej. `feat: #138 añade seccion de prediccion en la gui`)
+- `fix`: corrección de un fallo (ej. `fix: #110 rechaza valores no finitos en constante`)
+- `docs`: cambios en documentación (ej. `docs: #148 actualiza contributing e inventario en docs`)
+- `refactor`: reorganización de código sin cambiar lo que hace (ej. `refactor: #118 simplifica validacion del modelo`)
+- `test`: pruebas automatizadas nuevas o actualizadas (ej. `test: #104 añade pruebas unitarias de validacion de columnas`)
 
----
+## 5. Dependencias y entorno con `uv`
 
-## 5. Gestión de Dependencias con `uv`
+Gestionamos Python (`>=3.12`) y las librerías con `uv`. No usamos `pip install` a mano.
 
-El proyecto gestiona el entorno virtual y las dependencias mediante **`uv`** (Python `>=3.12`). **No se debe usar `pip install` directamente.**
-
-- **Sincronizar el entorno** tras clonar o actualizar la rama:
+- Sincronizar el entorno al clonar o al bajarse cambios:
   ```bash
   uv sync
   ```
-- **Añadir una dependencia de la aplicación:**
+- Añadir una librería de la aplicación:
   ```bash
   uv add <paquete>
   ```
-- **Añadir una dependencia de desarrollo** (pruebas, formateadores, etc.):
+- Añadir una librería solo para desarrollo (tests, formateo, etc.):
   ```bash
   uv add --dev <paquete>
   ```
-- **Archivo de bloqueo (`uv.lock`):** Siempre que se modifique `pyproject.toml`, deben incluirse tanto `pyproject.toml` como `uv.lock` en el mismo commit. GitHub Actions ejecuta `uv sync --locked` y fallará si ambos archivos no coinciden.
-- **Ejecutar la aplicación en desarrollo:**
+- **Archivo `uv.lock`:** Siempre que cambie `pyproject.toml`, hay que subir también `uv.lock` en el mismo commit. GitHub Actions lanza `uv sync --locked` y fallará si no coinciden.
+- Arrancar la aplicación en local:
   ```bash
-  uv run python src/practica_headliners/gui/ventana_principal.py
+  uv run python -m practica_headliners.gui.ventana_principal
   ```
 
----
+## 6. Pruebas automatizadas
 
-## 6. Ejecución de las Pruebas Automatizadas
+Las pruebas están en `tests/` y se lanzan con:
 
-- Todas las pruebas se encuentran en la carpeta `tests/` y se ejecutan con `pytest` a través de `uv`:
-  ```bash
-  uv run pytest -v
-  ```
-- **Sin dependencias de `data/`:** Los tests nunca deben leer archivos de la carpeta local `data/`. Cualquier archivo o dataset de prueba debe generarse en memoria o mediante el *fixture* `tmp_path` de `pytest`.
-- Toda funcionalidad nueva en los módulos de lógica debe incluir sus pruebas unitarias correspondientes.
+```bash
+uv run pytest -v
+```
 
----
+- **Nada de leer de `data/`:** Los tests no pueden depender de archivos locales de `data/`. Si un test necesita un dataset o un archivo temporal, se crea en memoria o usando `tmp_path` de `pytest`.
+- Cada funcionalidad nueva en los módulos de lógica tiene que llevar sus tests unitarios.
 
-## 7. Integración Continua (GitHub Actions) y Reglas de Fusión
+## 7. Integración continua (GitHub Actions) y reglas de fusión
 
-El flujo de CI está definido en `.github/workflows/ci.yml` y explicado en [`docs/integracion_continua.md`](docs/integracion_continua.md). Con cada `push` a cualquier rama, GitHub Actions prepara un entorno `ubuntu-latest` con las librerías del sistema para PySide6 y `xvfb`, configura Python según `.python-version`, sincroniza las dependencias con `uv sync --locked` y ejecuta `xvfb-run -a uv run pytest -v`.
+El flujo de CI está en `.github/workflows/ci.yml` (y explicado con más detalle en `docs/integracion_continua.md`). Cada vez que hacemos `push` a cualquier rama, GitHub Actions levanta un entorno Ubuntu con las librerías de PySide6 y `xvfb`, instala las dependencias con `uv sync --locked` y ejecuta `xvfb-run -a uv run pytest -v`.
 
-### Reglas de integración
-1. **Fusión de ramas de trabajo en `dev`:** Una rama (`feature/`, `fix/` o `docs/`) solo se fusiona en `dev` si las pruebas pasan en local (`uv run pytest -v`) **y** su última ejecución en GitHub Actions ha terminado correctamente (check verde).
-2. **Modalidad de fusión y revisión:** Se admite tanto abrir un **Pull Request** en GitHub como realizar una **fusión local** (`git merge` sobre `dev` actualizada), siempre que no afecte negativamente al proyecto y se compruebe antes de integrar que:
-   - El código cumple PEP 8 y mantiene nombres claros.
-   - No se han incluido archivos de datos (`data/`) ni modelos guardados.
-   - Los mensajes de commit siguen el formato acordado.
-   - Las pruebas automatizadas pasan en local y en GitHub Actions.
-3. **Mantenimiento de `dev`:** Después de cada fusión en `dev`, se comprueba que GitHub Actions sigue terminando en verde. Si falla, se crea inmediatamente una tarea de corrección en Taiga y se resuelve en una rama `fix/` antes de fusionar cualquier otra rama.
-4. **Fusión a `main`:** La rama `dev` solo se fusiona en `main` si su última ejecución en GitHub Actions ha terminado en verde y se va a publicar una nueva *release*.
+Reglas para fusionar cambios:
+1. **De rama de trabajo a `dev`:** Solo se fusiona una rama (`feature/`, `fix/` o `docs/`) si los tests pasan en local (`uv run pytest -v`) y el último check de GitHub Actions está en verde.
+2. **Revisión antes de integrar:** Se puede fusionar mediante Pull Request en GitHub o haciendo `git merge` en local sobre `dev` actualizada, comprobando antes que el código cumple PEP 8, que no se cuelan archivos de `data/`, que los commits siguen el formato y que los tests pasan.
+3. **Si `dev` se rompe:** Después de cada fusión comprobamos que Actions sigue en verde en `dev`. Si falla, se abre una tarea en Taiga y se arregla en una rama `fix/` antes de seguir metiendo otras ramas.
+4. **De `dev` a `main`:** Solo se hace para publicar una release, cuando `dev` está en verde, y obligatoriamente mediante Pull Request en GitHub con aprobación de otro compañero.
 
----
+## 8. Cómo hacer una release
 
-## 8. Procedimiento de Release
+Para publicar una nueva versión (tanto pre-releases como la versión final `v1.0.0`), seguimos estos pasos:
 
-Para publicar una nueva versión del proyecto (tanto *pre-releases* como la versión final `v1.0.0`), cualquier miembro del equipo debe seguir estos pasos:
+### 1. Comprobaciones previas
+- Confirmar que todas las historias de usuario y la documentación del hito están en `dev` y que GitHub Actions está en verde.
+- Revisar que no haya ningún dataset ni modelo guardado en el repositorio.
+- Comprobar que el campo `version` (y `description`) en `pyproject.toml` tiene el número de versión correcto (por ejemplo, `"1.0.0"`). Si hace falta cambiarlo, se hace en una rama desde `dev`, actualizando `pyproject.toml` y `uv.lock`, y se fusiona en `dev` antes de seguir.
 
-### 1. Requisitos previos y revisión de versión
-- Verificar que todas las historias de usuario y la documentación del hito están fusionadas en `dev` y que la pipeline de GitHub Actions está en verde.
-- Comprobar que el repositorio no contiene archivos de datos ni modelos guardados.
-- Comprobar que el campo `version` (y `description`) en `pyproject.toml` refleja la versión a publicar (ej. `"1.0.0"`). Si requiere cambios, crear una rama desde `dev`, actualizar `pyproject.toml` y `uv.lock`, y fusionarla en `dev` antes de continuar.
+### 2. Pull Request de `dev` a `main` en GitHub
+Como la rama `main` está protegida, no se fusiona desde el ordenador ni se hace `git push origin main`:
+1. En GitHub, ir a la pestaña **Pull requests** y pulsar **New pull request**.
+2. Elegir `base: main` y `compare: dev`, poner un título claro (por ejemplo, `Release v1.0.0`) y crear el Pull Request.
+3. Esperar a que pasen los checks de GitHub Actions y pedir a otro miembro del equipo que revise y apruebe el PR (**Approve**).
+4. Una vez aprobado, pulsar **Merge pull request** directamente en GitHub.
 
-### 2. Fusión en `main` y etiquetado (`tag`)
-Llevar el código estable a la rama principal y crear la etiqueta anotada (sustituye `v1.0.0` por la versión correspondiente):
+### 3. Crear la etiqueta (tag)
+Con `main` ya actualizada en GitHub, nos bajamos los cambios en local y subimos la etiqueta anotada (cambiando `v1.0.0` por la versión que toque):
 
 ```bash
 git checkout main
 git pull origin main
-git merge dev
 git tag -a v1.0.0 -m "Versión 1.0.0"
-git push origin main
 git push origin v1.0.0
 ```
 
-### 3. Publicación en GitHub Releases
-1. Ir a la pestaña **Releases** del repositorio en GitHub y pulsar **Draft a new release**.
-2. Seleccionar la etiqueta creada (`v1.0.0`), indicar el título y redactar las notas de la versión (funcionalidades incluidas, requisitos y limitaciones conocidas).
-3. Marcar **Set as a pre-release** solo en versiones preliminares (`v0.x.y`); dejarla **desmarcada** para la versión final (`v1.0.0`).
+### 4. Publicar en GitHub Releases
+1. Ir a **Releases** en GitHub y pulsar **Draft a new release**.
+2. Seleccionar la etiqueta que acabamos de subir (`v1.0.0`), poner el título y escribir las notas de la versión (qué incluye, requisitos y limitaciones conocidas).
+3. Marcar **Set as a pre-release** solo si es una versión preliminar (`v0.x.y`); para la versión final (`v1.0.0`) dejarla sin marcar.
 4. Pulsar **Publish release**.
 
-### 4. Comprobación posterior
-Tras publicar la *release*, verificar en una instalación limpia desde `main` que `uv sync` instala el entorno sin errores y que la aplicación arranca y funciona siguiendo únicamente el `README.md`.
+### 5. Comprobación final
+Para cerrar el proceso, probar a clonar el repositorio desde `main` en una carpeta limpia y comprobar que `uv sync` y el arranque de la app funcionan siguiendo únicamente las instrucciones del `README.md`.
