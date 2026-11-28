@@ -2,7 +2,7 @@
 
 Aplicación de escritorio hecha en Python para crear, evaluar, guardar y usar modelos de regresión lineal a partir de un dataset, todo desde interfaz gráfica.
 
-Versión actual: `v0.2.0`
+Versión actual: `v1.0.0`
 
 ## Qué permite hacer
 
